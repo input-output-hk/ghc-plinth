@@ -214,6 +214,9 @@ missing-win32-tarballs
 VERSION
 GIT_COMMIT_ID
 
+cabal.project.local
+dist-newstyle
+
 # -------------------------------------------------------------------------------------
 # when using a docker image, one can mount the source code directory as the home folder
 # -------------------------------------------------------------------------------------
