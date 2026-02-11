@@ -1,5 +1,5 @@
 cabal-version:   3.0
-name:            plinth-template
+name:            plinth-test
 version:         0.1.0.0
 license:
 build-type:      Simple
@@ -65,6 +65,7 @@ library plinth-validators
   exposed-modules:
     AuctionMintingPolicy
     AuctionValidator
+    Examples
 
 executable gen-auction-validator-blueprint
   import:         ghc-only-options, plutus-deps
@@ -75,6 +76,8 @@ executable gen-auction-validator-blueprint
     , bytestring
     , containers
     , plinth-validators
+    , prettyprinter
+    , text
 
 executable gen-minting-policy-blueprint
   import:         ghc-only-options, plutus-deps
@@ -85,3 +88,17 @@ executable gen-minting-policy-blueprint
     , bytestring
     , containers
     , plinth-validators
+
+executable gen-examples
+  import:         ghc-only-options, plutus-deps
+  hs-source-dirs: app
+  main-is:        GenExamples.hs
+  build-depends:
+    , base
+    , bytestring
+    , containers
+    , plinth-validators
+    , prettyprinter
+    , text
+    , directory
+    , filepath

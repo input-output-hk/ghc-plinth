@@ -32,4 +32,5 @@ CABAL_BUILD_ARGS="\
     fi
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} .
+    cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} run gen-examples
 )
