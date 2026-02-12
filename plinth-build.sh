@@ -64,17 +64,17 @@ VERSION=`"$BOOT_GHC" --numeric-version`
 CABAL_PROJECT_ARGS="--project-file=cabal.project"
 
 CABAL_ARGS="\
-	--remote-repo-cache _build/packages \
-	--store-dir=_build/${STAGE}/${TARGET_PLATFORM}/store \
-	--logs-dir=_build/${STAGE}/logs"
+    --remote-repo-cache _build/packages \
+    --store-dir=_build/${STAGE}/${TARGET_PLATFORM}/store \
+    --logs-dir=_build/${STAGE}/logs"
 
 CABAL_BUILD_ARGS="\
-	-j -w ${BOOT_GHC} \
-	--builddir=_build/${STAGE}/${TARGET_PLATFORM} \
-	--ghc-options=\"-fhide-source-paths\""
+    -j -w ${BOOT_GHC} \
+    --builddir=_build/${STAGE}/${TARGET_PLATFORM} \
+    --ghc-options=\"-fhide-source-paths\""
 
 (
-	cd plinth
+    cd plinth
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} ghc:ghc
 )
@@ -82,23 +82,24 @@ CABAL_BUILD_ARGS="\
 # add uplc-ghc to the _build dir and the bindists
 DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc"
 (
-	cd plinth
-	SRC_UPLC_GHC=`cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} list-bin ${CABAL_BUILD_ARGS} ghc:ghc`
-	echo "installing uplc-ghc: $SRC_UPLC_GHC => $DEST_UPLC_GHC"
+    cd plinth
+    SRC_UPLC_GHC=`cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} list-bin ${CABAL_BUILD_ARGS} ghc:ghc`
+    echo "installing uplc-ghc: $SRC_UPLC_GHC => $DEST_UPLC_GHC"
 
-	# add to build dir
-	cp "$SRC_UPLC_GHC" "$DEST_UPLC_GHC"
+    # add to build dir
+    cp "$SRC_UPLC_GHC" "$DEST_UPLC_GHC"
 
     # add to bindist
-	for dir in "$BASE/_build/bindist/*/"; do
-		if [ -d "$dir" ]; then
-			cp "$SRC_UPLC_GHC" "$dir/bin/uplc-ghc-$VERSION"
-			( cd "$dir/bin" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
-		fi
-	done
+    for dir in $BASE/_build/bindist/*; do
+        if [ -d "$dir" ]; then
+            echo "adding uplc-ghc to bindist: $dir"
+            cp "$SRC_UPLC_GHC" "$dir/bin/uplc-ghc-$VERSION"
+            ( cd "$dir/bin" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
+        fi
+    done
 )
 
 # rebuild archives to include uplc-ghc
-rm -f "$BASE/_build/bindist/ghc-*.tar.??"
+rm -f $BASE/_build/bindist/ghc-*.tar.??
 ./hadrian/build -j --flavour=release binary-dist
 
