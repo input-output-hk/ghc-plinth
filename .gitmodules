@@ -110,3 +110,6 @@
 [submodule "libraries/exceptions"]
 	path = libraries/exceptions
 	url = https://gitlab.haskell.org/ghc/packages/exceptions.git
+[submodule "plutus"]
+	path = plutus
+	url = git@github.com:luite/plutus-plinth.git

@@ -4,9 +4,6 @@ set -euo pipefail
 ####################################################################
 # edit configuration here:
 
-PLUTUS_COMMIT="91fc693959bb828f42b714347fc1a54ef9605e63"
-PLUTUS_REPO="https://github.com/IntersectMBO/plutus.git"
-
 : ${REBUILD:=0} # set to 1 to force rebuild
 
 # program locations
@@ -37,11 +34,10 @@ echo " happy:  $HAPPY"
 
 BASE=$PWD
 
-# fetch plutus
-# XXX make submodule?
-if [ ! -d plutus ]; then
-  git clone "$PLUTUS_REPO"
-  ( cd plutus && git checkout "$PLUTUS_COMMIT" )
+# check plutus
+if [ ! -d plutus/plutus-tx ]; then
+  echo "plutus submodule not found, please fetch submodules"
+  exit 1
 fi
 # build boot GHC
 if [ ! -x ./configure ] || [ "$REBUILD" -eq 1 ]; then
