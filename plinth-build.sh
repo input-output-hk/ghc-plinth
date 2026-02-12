@@ -100,6 +100,6 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc"
 )
 
 # rebuild archives to include uplc-ghc
-rm -f $BASE/_build/bindist/ghc-*.tar.??
+rm -f $BASE/_build/bindist/ghc-*.tar.*
 ./hadrian/build -j --flavour=release binary-dist
 

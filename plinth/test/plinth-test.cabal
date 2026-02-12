@@ -45,8 +45,7 @@ common plinth-options
     -fno-omit-interface-pragmas -fno-spec-constr -fno-specialise
     -fno-strictness -fno-unbox-small-strict-fields
     -fno-unbox-strict-fields
-    -- XXX support these again
-    -- -fplugin-opt PlutusTx.Plugin:target-version=1.1.0
+    -fplugin-opt PlutusTx.Plugin:target-version=1.1.0
 
 common plutus-deps
   build-depends:
@@ -66,6 +65,7 @@ library plinth-validators
     AuctionMintingPolicy
     AuctionValidator
     Examples
+    Utils
 
 executable gen-auction-validator-blueprint
   import:         ghc-only-options, plutus-deps
