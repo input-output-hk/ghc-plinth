@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
+LOCAL_HAPPY="$PWD/_build/tools/happy"
 
 ####################################################################
 # edit configuration here:
@@ -7,26 +8,48 @@ set -euo pipefail
 : ${REBUILD:=0} # set to 1 to force rebuild
 
 # program locations
-: ${GHC:=`which ghc-9.6.7`}
-: ${HAPPY:=`which happy-1.20.1.1`}
+: ${GHC:=$(which ghc-9.6.7 2>/dev/null || true)}
+: ${CABAL:=$(which cabal 2>/dev/null || true)}
+: ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || which happy-1.20.1.1 2>/dev/null || true)}
 
 # end configuration
 ####################################################################
+
+# version comparison: returns 0 if $1 >= $2
+version_ge() {
+  [ "$(printf '%s\n' "$1" "$2" | sort -V | head -n1)" = "$2" ]
+}
 
 if [ ! -x "$GHC" ]; then
   echo "GHC not found: $GHC"
   exit 1
 fi
-if [ ! -x "$HAPPY" ]; then
-  echo "Happy not found: $HAPPY"
+if [ -z "$CABAL" ] || [ ! -x "$CABAL" ]; then
+  echo "cabal not found"
   exit 1
+fi
+CABAL_VERSION=$("$CABAL" --numeric-version)
+if ! version_ge "$CABAL_VERSION" "3.14.2.0"; then
+  echo "cabal version $CABAL_VERSION is too old, need at least 3.14.2.0"
+  exit 1
+fi
+if [ -z "$HAPPY" ] || [ ! -x "$HAPPY" ]; then
+  echo "Happy not found, building happy-1.20.1.1 locally..."
+  "$CABAL" install happy-1.20.1.1 -w "$GHC" --install-method=copy --installdir="$PWD/_build/tools"
+  HAPPY="$LOCAL_HAPPY"
+  if [ ! -x "$HAPPY" ]; then
+    echo "Failed to build happy"
+    exit 1
+  fi
 fi
 
 export GHC
+export CABAL
 export HAPPY
 
 echo "using tools: "
 echo " GHC:    $GHC"
+echo " cabal:  $CABAL ($CABAL_VERSION)"
 echo " happy:  $HAPPY"
 
 ####################################################################
@@ -71,8 +94,8 @@ CABAL_BUILD_ARGS="\
 
 (
     cd plinth
-    cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
-    cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} ghc:ghc
+    "$CABAL" ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
+    "$CABAL" ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} ghc:ghc
 )
 
 # add uplc-ghc to the _build dir and the bindists
