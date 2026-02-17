@@ -112,4 +112,4 @@
 	url = https://gitlab.haskell.org/ghc/packages/exceptions.git
 [submodule "plutus"]
 	path = plutus
-	url = git@github.com:luite/plutus-plinth.git
+	url = git@github.com:input-output-hk/ghc-plinth-plutus.git
