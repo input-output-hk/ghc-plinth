@@ -70,7 +70,7 @@ if [ ! -x ./configure ] || [ "$REBUILD" -eq 1 ]; then
   ./boot
 fi
 if [ ! -e ./mk/config.h ] || [ "$REBUILD" -eq 1 ]; then
-  ./configure
+  ./configure --enable-tarballs-autodownload
 fi
 HADRIAN_DOCS_ARGS=""
 if [ -z "$XETEX" ] || [ ! -x "$XETEX" ]; then
