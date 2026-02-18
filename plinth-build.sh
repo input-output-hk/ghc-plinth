@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 LOCAL_HAPPY="$PWD/_build/tools/happy"
+LOCAL_ALEX="$PWD/_build/tools/alex"
 
 ####################################################################
 # edit configuration here:
@@ -11,6 +12,7 @@ LOCAL_HAPPY="$PWD/_build/tools/happy"
 : ${GHC:=$(which ghc-9.6.7 2>/dev/null || true)}
 : ${CABAL:=$(which cabal 2>/dev/null || true)}
 : ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || which happy-1.20.1.1 2>/dev/null || true)}
+: ${ALEX:=$( [ -x "$LOCAL_ALEX" ] && echo "$LOCAL_ALEX" || which alex 2>/dev/null || true)}
 : ${XETEX:=$(which xetex 2>/dev/null || true)}
 
 # end configuration
@@ -43,16 +45,27 @@ if [ -z "$HAPPY" ] || [ ! -x "$HAPPY" ]; then
     exit 1
   fi
 fi
+if [ -z "$ALEX" ] || [ ! -x "$ALEX" ]; then
+  echo "Alex not found, building alex-3.5.4.0 locally..."
+  "$CABAL" install alex-3.5.4.0 -w "$GHC" --install-method=copy --overwrite-policy=always --installdir="$PWD/_build/tools"
+  ALEX="$LOCAL_ALEX"
+  if [ ! -x "$ALEX" ]; then
+    echo "Failed to build alex"
+    exit 1
+  fi
+fi
 
 export GHC
 export CABAL
 export HAPPY
+export ALEX
 export XETEX
 
 echo "using tools: "
 echo " GHC:    $GHC"
 echo " cabal:  $CABAL ($CABAL_VERSION)"
 echo " happy:  $HAPPY"
+echo " alex:   $ALEX"
 echo " xetex:  ${XETEX:-not found, docs will be disabled}"
 
 ####################################################################
