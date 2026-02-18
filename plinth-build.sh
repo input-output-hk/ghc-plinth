@@ -11,6 +11,7 @@ LOCAL_HAPPY="$PWD/_build/tools/happy"
 : ${GHC:=$(which ghc-9.6.7 2>/dev/null || true)}
 : ${CABAL:=$(which cabal 2>/dev/null || true)}
 : ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || which happy-1.20.1.1 2>/dev/null || true)}
+: ${XETEX:=$(which xetex 2>/dev/null || true)}
 
 # end configuration
 ####################################################################
@@ -46,11 +47,13 @@ fi
 export GHC
 export CABAL
 export HAPPY
+export XETEX
 
 echo "using tools: "
 echo " GHC:    $GHC"
 echo " cabal:  $CABAL ($CABAL_VERSION)"
 echo " happy:  $HAPPY"
+echo " xetex:  ${XETEX:-not found, docs will be disabled}"
 
 ####################################################################
 # do the things
@@ -69,8 +72,14 @@ fi
 if [ ! -e ./mk/config.h ] || [ "$REBUILD" -eq 1 ]; then
   ./configure
 fi
+HADRIAN_DOCS_ARGS=""
+if [ -z "$XETEX" ] || [ ! -x "$XETEX" ]; then
+  echo "xetex not found, disabling docs"
+  HADRIAN_DOCS_ARGS="--docs=none"
+fi
+
 if [ ! -x ./_build/stage1/bin/ghc ] || [ "$REBUILD" -eq 1 ]; then
-  ./hadrian/build -j --flavour=release binary-dist
+  ./hadrian/build -j --flavour=release $HADRIAN_DOCS_ARGS binary-dist
 fi
 
 # build Plinth GHC
@@ -143,5 +152,5 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
 
 # rebuild archives to include uplc-ghc
 rm -f "$BASE"/_build/bindist/ghc-*.tar.*
-./hadrian/build -j --flavour=release binary-dist
+./hadrian/build -j --flavour=release $HADRIAN_DOCS_ARGS binary-dist
 
