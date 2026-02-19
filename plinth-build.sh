@@ -4,7 +4,7 @@ LOCAL_HAPPY="$PWD/_build/tools/happy"
 LOCAL_ALEX="$PWD/_build/tools/alex"
 
 RELEASE_HADRIAN_ARGS=""
-DEV_HADRIAN_ARGS="--no-docs"
+DEV_HADRIAN_ARGS="--docs=none"
 RELEASE_CONFIGURE_ARGS="--enable-tarballs-autodownload"
 DEV_CONFIGURE_ARGS="--enable-tarballs-autodownload"
 
@@ -19,6 +19,8 @@ DEV_CONFIGURE_ARGS="--enable-tarballs-autodownload"
 : ${CABAL:=$(which cabal 2>/dev/null || true)}
 : ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || which happy-1.20.1.1 2>/dev/null || true)}
 : ${ALEX:=$( [ -x "$LOCAL_ALEX" ] && echo "$LOCAL_ALEX" || which alex 2>/dev/null || true)}
+: ${TAR:=$(which tar 2>/dev/null || true)}
+: ${XZ:=$(which xz 2>/dev/null || true)}
 
 # override default arguments
 : ${HADRIAN_ARGS:=$( [ "$RELEASE" -eq 1 ] && echo "$RELEASE_HADRIAN_ARGS" || echo "$DEV_HADRIAN_ARGS" )}
@@ -64,6 +66,15 @@ if [ -z "$ALEX" ] || [ ! -x "$ALEX" ]; then
   fi
 fi
 
+if [ -z "$TAR" ] || [ ! -x "$TAR" ]; then
+  echo "tar not found"
+  exit 1
+fi
+if [ -z "$XZ" ] || [ ! -x "$XZ" ]; then
+  echo "xz not found"
+  exit 1
+fi
+
 export GHC
 export CABAL
 export HAPPY
@@ -74,6 +85,8 @@ echo " GHC:    $GHC"
 echo " cabal:  $CABAL ($CABAL_VERSION)"
 echo " happy:  $HAPPY"
 echo " alex:   $ALEX"
+echo " tar:    $TAR"
+echo " xz:     $XZ"
 
 ####################################################################
 # do the things
@@ -180,5 +193,5 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
 echo "rebuilding bindist..."
 rm -f "$BASE"/_build/bindist/ghc-*.tar.*
 BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
-(cd "$BASE/_build/bindist" && tar -c --xz -f "$BINDIST_NAME.tar.xz" "$BINDIST_NAME")
+(cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
 
