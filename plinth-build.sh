@@ -3,17 +3,26 @@ set -euo pipefail
 LOCAL_HAPPY="$PWD/_build/tools/happy"
 LOCAL_ALEX="$PWD/_build/tools/alex"
 
+RELEASE_HADRIAN_ARGS=""
+DEV_HADRIAN_ARGS="--no-docs"
+RELEASE_CONFIGURE_ARGS="--enable-tarballs-autodownload"
+DEV_CONFIGURE_ARGS="--enable-tarballs-autodownload"
+
 ####################################################################
 # edit configuration here:
 
 : ${REBUILD:=0} # set to 1 to force rebuild
+: ${RELEASE:=0} # set to 1 to build release version including documentation (more build dependencies)
 
 # program locations
 : ${GHC:=$(which ghc-9.6.7 2>/dev/null || true)}
 : ${CABAL:=$(which cabal 2>/dev/null || true)}
 : ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || which happy-1.20.1.1 2>/dev/null || true)}
 : ${ALEX:=$( [ -x "$LOCAL_ALEX" ] && echo "$LOCAL_ALEX" || which alex 2>/dev/null || true)}
-: ${XETEX:=$(which xetex 2>/dev/null || true)}
+
+# override default arguments
+: ${HADRIAN_ARGS:=$( [ "$RELEASE" -eq 1 ] && echo "$RELEASE_HADRIAN_ARGS" || echo "$DEV_HADRIAN_ARGS" )}
+: ${CONFIGURE_ARGS:=$( [ "$RELEASE" -eq 1 ] && echo "$RELEASE_CONFIGURE_ARGS" || echo "$DEV_CONFIGURE_ARGS" )}
 
 # end configuration
 ####################################################################
@@ -59,14 +68,12 @@ export GHC
 export CABAL
 export HAPPY
 export ALEX
-export XETEX
 
 echo "using tools: "
 echo " GHC:    $GHC"
 echo " cabal:  $CABAL ($CABAL_VERSION)"
 echo " happy:  $HAPPY"
 echo " alex:   $ALEX"
-echo " xetex:  ${XETEX:-not found, docs will be disabled}"
 
 ####################################################################
 # do the things
@@ -83,16 +90,11 @@ if [ ! -x ./configure ] || [ "$REBUILD" -eq 1 ]; then
   ./boot
 fi
 if [ ! -e ./mk/config.h ] || [ "$REBUILD" -eq 1 ]; then
-  ./configure --enable-tarballs-autodownload
-fi
-HADRIAN_DOCS_ARGS=""
-if [ -z "$XETEX" ] || [ ! -x "$XETEX" ]; then
-  echo "xetex not found, disabling docs"
-  HADRIAN_DOCS_ARGS="--docs=none"
+  ./configure $CONFIGURE_ARGS
 fi
 
 if [ ! -x ./_build/stage1/bin/ghc ] || [ "$REBUILD" -eq 1 ]; then
-  ./hadrian/build -j --flavour=release $HADRIAN_DOCS_ARGS binary-dist
+  ./hadrian/build -j --flavour=release $HADRIAN_ARGS binary-dist
 fi
 
 # build Plinth GHC
@@ -123,7 +125,6 @@ CABAL_BUILD_ARGS="\
 # add uplc-ghc to the _build dir and the bindists
 CWRAPPER_DIR="$BASE/hadrian/bindist/cwrappers"
 
-# detect Windows by checking the target platform
 case "$TARGET_PLATFORM" in
     *-mingw32|*-windows) IS_WINDOWS=1; EXE_EXT=".exe" ;;
     *)                   IS_WINDOWS=0; EXE_EXT="" ;;
