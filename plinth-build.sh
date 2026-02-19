@@ -139,7 +139,9 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     # add to build dir
     cp "$SRC_UPLC_GHC" "$DEST_UPLC_GHC"
 
-    # add to bindist
+    # fixup the bindist:
+    #  - add uplc-ghc with the static Plinth plugin
+    #  - remove boot GHC, since we don't want the UPLC GHC to replace the user's GHC
     for dir in "$BASE"/_build/bindist/*; do
         if [ -d "$dir" ]; then
             echo "adding uplc-ghc to bindist: $dir"
@@ -159,11 +161,23 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
                 cp "$SRC_UPLC_GHC" "$dir/bin/uplc-ghc-$VERSION"
                 ( cd "$dir/bin" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
             fi
+
+            # remove the boot GHC from the bindist
+            rm -f "$dir"/bin/ghc
+            rm -f "$dir"/bin/ghc.exe
+            rm -f "$dir"/bin/ghc-$VERSION
+            rm -f "$dir"/bin/ghc-$VERSION.exe
+            # rename runhaskell/runghc
+            mv -f "$dir"/bin/runhaskell "$dir"/bin/uplc-runhaskell 2>/dev/null || true
+            mv -f "$dir"/bin/runghc "$dir"/bin/uplc-runghc 2>/dev/null || true
+            # XXX wrappers on Windows, other tools like unlit need to be renamed?
         fi
     done
 )
 
-# rebuild archives to include uplc-ghc
+# rebuild bindist after fixup
+echo "rebuilding bindist..."
 rm -f "$BASE"/_build/bindist/ghc-*.tar.*
-./hadrian/build -j --flavour=release $HADRIAN_DOCS_ARGS binary-dist
+BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
+(cd "$BASE/_build/bindist" && tar -c --xz -f "$BINDIST_NAME.tar.xz" "$BINDIST_NAME")
 
