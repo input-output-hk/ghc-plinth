@@ -34,6 +34,14 @@ jobs:
        git submodule sync
        git submodule update --init --recursive
 
+    - uses: haskell-actions/setup@v2
+      id: setup
+      name: Setup Haskell tools
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+        cabal-update: true
+
     - name: Build uplc-ghc
       run: ./plinth-build.sh
 
