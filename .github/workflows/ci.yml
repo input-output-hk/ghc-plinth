@@ -4,87 +4,46 @@ on:
   pull_request:
     types: [opened, synchronize]
   push:
-    branches: [stable-ghc-9.14, stable-master]
+    branches: [master, ghc-9.6-plinth]
   workflow_dispatch:
 
 jobs:
   cabal:
+    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - plat: x86_64-linux
-            runner: ubuntu-24.04
-            ghc: '98'
-            dynamic: 0
-          - plat: x86_64-linux
-            runner: ubuntu-24.04
-            ghc: '98'
-            dynamic: 1
-          # - plat: aarch64-linux  # disabled: waiting for devx images to be fixed
-          #   runner: ubuntu-24.04-arm
-          #   ghc: '98'
-          #   dynamic: 0
-          # - plat: aarch64-linux
-          #   runner: ubuntu-24.04-arm
-          #   ghc: '98'
-          #   dynamic: 1
-          - plat: aarch64-darwin
-            runner: macos-latest
-            ghc: '98'
-            dynamic: 0
-          - plat: aarch64-darwin
-            runner: macos-latest
-            ghc: '98'
-            dynamic: 1
-
-    name: "${{ matrix.plat }} / ghc ${{ matrix.ghc }} / dynamic=${{ matrix.dynamic }}"
-    runs-on: ${{ matrix.runner }}
+        os: [ubuntu-latest]
+        ghc: ['9.6.7']
 
     steps:
     - uses: actions/checkout@v4
       with:
-        submodules: "recursive"
+        submodules: false
 
-    - uses: input-output-hk/actions/devx@latest
+    - name: Setup SSH for submodules
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+    - name: Init and update submodules
+      run: |
+       git submodule sync
+       git submodule update --init --recursive
+
+    - uses: haskell-actions/setup@v2
+      id: setup
+      name: Setup Haskell tools
       with:
-        platform: ${{ matrix.plat }}
-        compiler-nix-name: 'ghc98'
-        minimal: true
-        ghc: true
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+        cabal-update: true
 
-    - name: Update hackage
-      shell: devx {0}
-      run: cabal update
+    - name: Build uplc-ghc
+      run: ./plinth-build.sh
 
-    # The Makefile will run configure (and boot 😞), we also need to create a
-    # synthetic package before running configure.  Once this nuissance is fixed
-    # we can do proper configure + make again. Until then... we have to live
-    # with the hack of running everything from the make target.
-    # - name: Configure the build
-    #   shell: devx {0}
-    #   run: ./configure
-
-    - name: Build the bindist (dynamic=${{ matrix.dynamic }})
-      shell: devx {0}
-      run: make CABAL=$PWD/_build/stage0/bin/cabal DYNAMIC=${{ matrix.dynamic }}
-
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: ${{ matrix.plat }}-dynamic${{ matrix.dynamic }}-bindist
-        path: _build/bindist
-
-    - name: Run the testsuite (dynamic=${{ matrix.dynamic }})
-      shell: devx {0}
-      run: make test CABAL=$PWD/_build/stage0/bin/cabal DYNAMIC=${{ matrix.dynamic }}
-
-    - name: Upload test results
-      uses: actions/upload-artifact@v4
-      if: ${{ !cancelled() }} # upload test results even if the testsuite failed to pass
-      with:
-        name: ${{ matrix.plat }}-dynamic${{ matrix.dynamic }}-testsuite-results
-        path: |
-          _build/test-perf.csv
-          _build/test-summary.txt
-          _build/test-junit.xml
+    # - name: Test uplc-ghc
+    #   run: ./plinth-test.sh
