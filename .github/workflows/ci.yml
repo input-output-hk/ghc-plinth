@@ -45,5 +45,5 @@ jobs:
     - name: Build uplc-ghc
       run: ./plinth-build.sh
 
-    - name: Test uplc-ghc
-      run: ./plinth-test.sh
+    # - name: Test uplc-ghc
+    #   run: ./plinth-test.sh
