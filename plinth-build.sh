@@ -3,10 +3,26 @@ set -euo pipefail
 LOCAL_HAPPY="$PWD/_build/tools/happy"
 LOCAL_ALEX="$PWD/_build/tools/alex"
 
+UNAME_S=$(uname -s)
+case "$UNAME_S" in
+    MINGW*|MSYS*) IS_WINDOWS=1; EXE_EXT=".exe" ;;
+    *)            IS_WINDOWS=0; EXE_EXT="" ;;
+esac
+
 RELEASE_HADRIAN_ARGS=""
 DEV_HADRIAN_ARGS="--docs=none"
-RELEASE_CONFIGURE_ARGS="--enable-tarballs-autodownload"
-DEV_CONFIGURE_ARGS="--enable-tarballs-autodownload"
+RELEASE_FLAVOUR="release"
+DEV_FLAVOUR="release+debug_info+debug_ghc+assertions"
+
+# platform-specific default configure arguments
+case "$UNAME_S" in
+    MINGW*|MSYS*) DEFAULT_CONFIGURE_ARGS="--enable-tarballs-autodownload" ;;
+    Darwin*)      DEFAULT_CONFIGURE_ARGS="--with-intree-gmp" ;;
+    *)            DEFAULT_CONFIGURE_ARGS="" ;;
+esac
+
+RELEASE_CONFIGURE_ARGS="$DEFAULT_CONFIGURE_ARGS"
+DEV_CONFIGURE_ARGS="$DEFAULT_CONFIGURE_ARGS"
 
 ####################################################################
 # edit configuration here:
@@ -15,16 +31,18 @@ DEV_CONFIGURE_ARGS="--enable-tarballs-autodownload"
 : ${RELEASE:=0} # set to 1 to build release version including documentation (more build dependencies)
 
 # program locations
-: ${GHC:=$(which ghc-9.6.7 2>/dev/null || true)}
-: ${CABAL:=$(which cabal 2>/dev/null || true)}
-: ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || which happy-1.20.1.1 2>/dev/null || true)}
-: ${ALEX:=$( [ -x "$LOCAL_ALEX" ] && echo "$LOCAL_ALEX" || which alex 2>/dev/null || true)}
-: ${TAR:=$(which tar 2>/dev/null || true)}
-: ${XZ:=$(which xz 2>/dev/null || true)}
+: ${GHC:=$(command -v ghc-9.6.7 2>/dev/null || true)}
+: ${CABAL:=$(command -v cabal 2>/dev/null || true)}
+: ${PYTHON:=$(command -v python3 2>/dev/null || true)}
+: ${HAPPY:=$( [ -x "$LOCAL_HAPPY" ] && echo "$LOCAL_HAPPY" || command -v happy-1.20.1.1 2>/dev/null || true)}
+: ${ALEX:=$( [ -x "$LOCAL_ALEX" ] && echo "$LOCAL_ALEX" || command -v alex 2>/dev/null || true)}
+: ${TAR:=$(command -v tar 2>/dev/null || true)}
+: ${XZ:=$(command -v xz 2>/dev/null || true)}
 
 # override default arguments
 : ${HADRIAN_ARGS:=$( [ "$RELEASE" -eq 1 ] && echo "$RELEASE_HADRIAN_ARGS" || echo "$DEV_HADRIAN_ARGS" )}
 : ${CONFIGURE_ARGS:=$( [ "$RELEASE" -eq 1 ] && echo "$RELEASE_CONFIGURE_ARGS" || echo "$DEV_CONFIGURE_ARGS" )}
+: ${FLAVOUR:=$( [ "$RELEASE" -eq 1 ] && echo "$RELEASE_FLAVOUR" || echo "$DEV_FLAVOUR" )}
 
 # end configuration
 ####################################################################
@@ -74,17 +92,23 @@ if [ -z "$XZ" ] || [ ! -x "$XZ" ]; then
   echo "xz not found"
   exit 1
 fi
+if [ -z "$PYTHON" ] || [ ! -x "$PYTHON" ]; then
+  echo "python3 not found"
+  exit 1
+fi
 
 export GHC
 export CABAL
 export HAPPY
 export ALEX
+export PYTHON
 
 echo "using tools: "
 echo " GHC:    $GHC"
 echo " cabal:  $CABAL ($CABAL_VERSION)"
 echo " happy:  $HAPPY"
 echo " alex:   $ALEX"
+echo " python: $PYTHON"
 echo " tar:    $TAR"
 echo " xz:     $XZ"
 
@@ -99,15 +123,37 @@ if [ ! -d plutus/plutus-tx ]; then
   exit 1
 fi
 # build boot GHC
+DID_BOOT_OR_CONFIGURE=0
 if [ ! -x ./configure ] || [ "$REBUILD" -eq 1 ]; then
+  echo "booting..."
   ./boot
+  DID_BOOT_OR_CONFIGURE=1
 fi
 if [ ! -e ./mk/config.h ] || [ "$REBUILD" -eq 1 ]; then
+  echo "configuring..."
+  (
+  # On Windows/MinGW64, ensure we use the CA bundle from MSYS2 to avoid SSL errors when downloading tarballs
+  if [ "$IS_WINDOWS" -eq 1 ]; then
+      export SSL_CERT_FILE="$(cygpath -w /mingw64/etc/ssl/certs/ca-bundle.crt)"
+  fi
   ./configure $CONFIGURE_ARGS
+  )
+  DID_BOOT_OR_CONFIGURE=1
+fi
+
+# On Windows, plinth/ghc may not be a a real symlink, recreate it to
+# prevent it from becoming stale.
+if [ "$DID_BOOT_OR_CONFIGURE" -eq 1 ] && [ "$IS_WINDOWS" -eq 1 ] && [ -d plinth/ghc ] && [ ! -L plinth/ghc ]; then
+    echo "re-creating plinth/ghc symlink..."
+    rm -rf plinth/ghc
+    ln -s ../ghc plinth/ghc
 fi
 
 if [ ! -x ./_build/stage1/bin/ghc ] || [ "$REBUILD" -eq 1 ]; then
-  ./hadrian/build -j --flavour=release $HADRIAN_ARGS binary-dist
+  echo "building..."
+  echo "./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist"
+
+  ./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist
 fi
 
 # build Plinth GHC
@@ -129,19 +175,30 @@ CABAL_BUILD_ARGS="\
     --builddir=_build/${STAGE}/${TARGET_PLATFORM} \
     --ghc-options=\"-fhide-source-paths\""
 
+# On Windows/MinGW64, ensure we use Git for Windows (not MSYS2 git) and
+# prevent git from hanging on interactive credential/host-key prompts
+# when called as a subprocess by cabal.
+if [ "$IS_WINDOWS" -eq 1 ]; then
+    if [ -d "/c/Program Files/Git/bin" ]; then
+        export PATH="/c/Program Files/Git/bin:$PATH"
+    fi
+    export GIT_TERMINAL_PROMPT=0
+    export GIT_CONFIG_COUNT=1
+    export GIT_CONFIG_KEY_0="core.longpaths"
+    export GIT_CONFIG_VALUE_0="true"
+fi
+
 (
+    echo "building uplc-ghc"
     cd plinth
+    echo "cabal update..."
     "$CABAL" ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
+    echo "cabal build..."
     "$CABAL" ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} ghc:ghc
 )
 
 # add uplc-ghc to the _build dir and the bindists
 CWRAPPER_DIR="$BASE/hadrian/bindist/cwrappers"
-
-case "$TARGET_PLATFORM" in
-    *-mingw32|*-windows) IS_WINDOWS=1; EXE_EXT=".exe" ;;
-    *)                   IS_WINDOWS=0; EXE_EXT="" ;;
-esac
 
 DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
 

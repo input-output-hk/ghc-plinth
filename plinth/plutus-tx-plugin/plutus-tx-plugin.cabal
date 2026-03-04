@@ -1,5 +1,5 @@
 cabal-version:   3.0
-name:            plutus-tx-plugin-stub
+name:            plutus-tx-plugin
 version:         1.57.0.0
 license:         Apache-2.0
 license-files:
@@ -47,7 +47,7 @@ common ghc-version-support
     buildable: False
 
 common os-support
-  if (impl(ghcjs) || os(windows))
+  if impl(ghcjs)
     buildable: False
 
 library

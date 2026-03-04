@@ -17,7 +17,7 @@ index-state:
 
 packages:
   ./.
-  ../plutus-tx-plugin/plutus-tx-plugin.cabal
+  ../plutus-tx-plugin
 
 optional-packages:
   ../../plutus/plutus-tx
@@ -50,6 +50,7 @@ source-repository-package
     location: https://github.com/haskell-cryptography/secp256k1-clib
     tag: 211b95baad422966c9e719ed70cbc189c58eaae5
 
+
 package secp256k1-clib
   flags: +schnorrsig +recovery +ecdh +extrakeys
 
@@ -59,3 +60,4 @@ package sodium-clib
   -- and the link phase fails with cryptic error messages.
   configure-options: --enable-pie=no
 
+constraints: mempack == 0.1.2.0
