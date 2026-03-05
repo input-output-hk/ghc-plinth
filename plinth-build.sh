@@ -143,7 +143,7 @@ fi
 
 # On Windows, plinth/ghc may not be a a real symlink, recreate it to
 # prevent it from becoming stale.
-if [ "$DID_BOOT_OR_CONFIGURE" -eq 1 ] && [ "$IS_WINDOWS" -eq 1 ] && [ -d plinth/ghc ] && [ ! -L plinth/ghc ]; then
+if [ "$IS_WINDOWS" -eq 1 ] && ([ -f plinth/ghc ] || ([ "$DID_BOOT_OR_CONFIGURE" -eq 1 ] && [ -d plinth/ghc ] && [ ! -L plinth/ghc ])); then
     echo "re-creating plinth/ghc symlink..."
     rm -rf plinth/ghc
     ln -s ../ghc plinth/ghc
