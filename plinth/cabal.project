@@ -62,4 +62,4 @@ package sodium-clib
 
 package ghc-bin
   flags: +plinth +internal-interpreter +threaded
-  executable-static: True
+  executable-static: False
