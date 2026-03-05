@@ -141,12 +141,32 @@ if [ ! -e ./mk/config.h ] || [ "$REBUILD" -eq 1 ]; then
   DID_BOOT_OR_CONFIGURE=1
 fi
 
-# On Windows, plinth/ghc may not be a a real symlink, recreate it to
-# prevent it from becoming stale.
-if [ "$IS_WINDOWS" -eq 1 ] && ([ -f plinth/ghc ] || ([ "$DID_BOOT_OR_CONFIGURE" -eq 1 ] && [ -d plinth/ghc ] && [ ! -L plinth/ghc ])); then
-    echo "re-creating plinth/ghc symlink..."
-    rm -rf plinth/ghc
-    ln -s ../ghc plinth/ghc
+# On Windows, plinth/ghc must be a real symlink to ../ghc
+if [ "$IS_WINDOWS" -eq 1 ] && [ ! -L plinth/ghc ]; then
+    echo "error: plinth/ghc is not a symlink."
+    echo ""
+    # Check Developer Mode via PowerShell (the registry key location varies across Windows versions)
+    DEV_MODE=$(powershell.exe -NoProfile -Command "(Get-WindowsDeveloperLicense).IsValid" 2>/dev/null | tr -d '\r')
+    [ "$DEV_MODE" = "True" ] && DEV_MODE=1 || DEV_MODE=0
+    if [ "$DEV_MODE" != "1" ]; then
+        echo "  Windows Developer Mode is not enabled."
+        echo "  Enable it in: Settings > System > Advanced"
+        echo ""
+    fi
+    SYMLINKS_CFG=$(git config --get core.symlinks 2>/dev/null || echo "false")
+    if [ "$SYMLINKS_CFG" != "true" ]; then
+        echo "  git core.symlinks is not enabled."
+        echo "  Run: git config core.symlinks true"
+        echo ""
+    fi
+    if [ "$DEV_MODE" = "1" ] && [ "$SYMLINKS_CFG" = "true" ]; then
+        echo "  Developer Mode and core.symlinks are both enabled, but plinth/ghc"
+        echo "  is still not a symlink. Try re-checking out the path:"
+        echo "    rm -rf plinth/ghc && git checkout -- plinth/ghc"
+        echo ""
+    fi
+    echo "After fixing, re-run this script."
+    exit 1
 fi
 
 if [ ! -x ./_build/stage1/bin/ghc ] || [ "$REBUILD" -eq 1 ]; then
