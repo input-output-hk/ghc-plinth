@@ -161,17 +161,16 @@ verify_installation() {
         fail "ghc-pkg check failed"
     fi
 
-    # 5. No build paths leaked
+    # 5. No build paths leaked (text and binary files)
     local build_dir="$REPO_ROOT"
     local leaked=0
 
     # Check wrapper scripts in bin/
     for f in "$prefix/bin"/*; do
         [ -f "$f" ] || continue
-        # Only check text files (wrapper scripts)
         file "$f" | grep -q text || continue
         if grep -q "$build_dir" "$f" 2>/dev/null; then
-            fail "build path leaked in $(basename "$f"): contains $build_dir"
+            fail "build path leaked in wrapper $(basename "$f")"
             leaked=1
         fi
     done
@@ -193,6 +192,29 @@ verify_installation() {
             leaked=1
         fi
     fi
+
+    # Check binaries for embedded build paths (RPATH, string literals, etc.)
+    # Covers ELF (Linux), Mach-O (macOS), and PE (Windows) executables and libraries.
+    local scan_dirs=("$ghclibdir/bin")
+    # Also scan library directories for shared objects / dylibs / DLLs
+    for libsubdir in "$ghclibdir/lib" "$ghclibdir"; do
+        [ -d "$libsubdir" ] || continue
+        scan_dirs+=("$libsubdir")
+    done
+    local bin_files
+    bin_files=$(find "${scan_dirs[@]}" -maxdepth 3 -type f \( \
+        -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \
+        -o -name '*.exe' -o -perm /111 \) 2>/dev/null || true)
+    while IFS= read -r f; do
+        [ -n "$f" ] || continue
+        # Only check actual binary files (ELF, Mach-O, PE), not scripts or data
+        file "$f" | grep -qiE '(ELF|Mach-O|PE32|executable|shared object|dynamically linked)' || continue
+        if strings "$f" | grep -q "$build_dir"; then
+            fail "build path leaked in binary $(basename "$f") (in $(dirname "$f"))"
+            strings "$f" | grep "$build_dir" | head -3
+            leaked=1
+        fi
+    done <<< "$bin_files"
 
     if [ "$leaked" -eq 0 ]; then
         pass "no build paths leaked in installed files"
