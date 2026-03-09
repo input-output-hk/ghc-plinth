@@ -171,9 +171,9 @@ fi
 
 if [ ! -x ./_build/stage1/bin/ghc ] || [ "$REBUILD" -eq 1 ]; then
   echo "building..."
-  echo "./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist"
+  echo "./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist-dir"
 
-  ./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist
+  ./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist-dir
 fi
 
 # build Plinth GHC
@@ -270,9 +270,8 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     done
 )
 
-# rebuild bindist after fixup
-echo "rebuilding bindist..."
-rm -f "$BASE"/_build/bindist/ghc-*.tar.*
+# create bindist archive after fixup
+echo "creating bindist archive..."
 BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
 (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
 
