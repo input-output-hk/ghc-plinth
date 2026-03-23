@@ -1,0 +1,47 @@
+cabal-version: >= 1.10
+
+name:     evoke
+version:  0.2023.1.26
+synopsis: GHC parsed-AST plugin for deriving AsData and Optics instances.
+description:
+  A GHC plugin (used as a static plugin inside the Plinth GHC binary) that
+  generates AsData pattern synonyms and Optics prisms from data declarations
+  via DerivingVia syntax.
+
+build-type:    Simple
+category:      Plugin
+license:       MIT
+maintainer:    baldur
+
+library
+  build-depends:
+      base       >= 4.16
+    , ghc
+    , bytestring
+  default-language: Haskell2010
+  exposed-modules:
+    Evoke
+    Evoke.Constant.Module
+    Evoke.Generator.AsData
+    Evoke.Generator.Common
+    Evoke.Generator.Optics
+    Evoke.Hs
+    Evoke.Hsc
+    Evoke.Options
+    Evoke.Type.Config
+    Evoke.Type.Constructor
+    Evoke.Type.Field
+    Evoke.Type.Flag
+    Evoke.Type.Type
+  ghc-options:
+    -Wno-all-missed-specialisations
+    -Wno-implicit-prelude
+    -Wno-missing-deriving-strategies
+    -Wno-missing-exported-signatures
+    -Wno-missing-kind-signatures
+    -Wno-missing-safe-haskell-mode
+    -Wno-prepositive-qualified-module
+    -Wno-safe
+    -Wno-unsafe
+  hs-source-dirs: src
+  other-modules: Paths_evoke

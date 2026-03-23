@@ -101,6 +101,7 @@ import qualified Data.List.NonEmpty as NE
 
 #if defined(PLINTH)
 import qualified PlutusTx.Plugin
+import qualified Evoke
 import GHC.Driver.Monad (modifySession)
 #endif
 
@@ -278,7 +279,14 @@ main' postLoadMode units dflags0 args flagWarnings = do
                            ]
       plinth_static_plugin =
         StaticPlugin (PluginWithArgs PlutusTx.Plugin.plugin plinth_plugin_args)
-      static_plugins = [plinth_static_plugin]
+      evoke_plugin_mod_name = mkModuleName "Evoke"
+      evoke_plugin_args = [ opt
+                          | (mod_name, opt) <- pluginModNameOpts dflags6
+                          , mod_name == evoke_plugin_mod_name
+                          ]
+      evoke_static_plugin =
+        StaticPlugin (PluginWithArgs Evoke.plugin evoke_plugin_args)
+      static_plugins = [plinth_static_plugin, evoke_static_plugin]
 
   modifySession $ \hsc_env ->
     let old_plugins = hsc_plugins hsc_env
