@@ -62,6 +62,7 @@ library plinth-validators
   hs-source-dirs:  src
   build-depends:   base
   exposed-modules:
+    AsDataVia
     AuctionMintingPolicy
     AuctionValidator
     Examples

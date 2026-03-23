@@ -1,0 +1,51 @@
+cabal-version: >= 1.10
+
+name:     plinth-plugin
+version:  0.2023.1.26
+synopsis: GHC parsed-AST plugin for deriving AsData and Optics instances.
+description:
+  A GHC plugin (used as a static plugin inside the Plinth GHC binary) that
+  generates AsData pattern synonyms and Optics prisms from data declarations
+  via DerivingVia syntax.
+
+build-type:    Simple
+category:      Plugin
+license:       MIT
+maintainer:    baldur
+
+library
+  build-depends:
+      base       >= 4.16
+    , ghc
+    , text
+    , bytestring
+  default-language: Haskell2010
+  exposed-modules:
+    PlinthPlugin
+    PlinthPlugin.Constant.Module
+    PlinthPlugin.Generator.AsData
+    PlinthPlugin.Generator.Common
+    PlinthPlugin.Generator.FromData
+    PlinthPlugin.Generator.Match
+    PlinthPlugin.Generator.Optics
+    PlinthPlugin.Hs
+    PlinthPlugin.Hsc
+    PlinthPlugin.Options
+    PlinthPlugin.Type.Config
+    PlinthPlugin.Type.Constructor
+    PlinthPlugin.Type.Field
+    PlinthPlugin.Type.Flag
+    PlinthPlugin.Type.Type
+    PlinthPlugin.Via
+  ghc-options:
+    -Wno-all-missed-specialisations
+    -Wno-implicit-prelude
+    -Wno-missing-deriving-strategies
+    -Wno-missing-exported-signatures
+    -Wno-missing-kind-signatures
+    -Wno-missing-safe-haskell-mode
+    -Wno-prepositive-qualified-module
+    -Wno-safe
+    -Wno-unsafe
+  hs-source-dirs: src
+  other-modules: Paths_plinth_plugin

@@ -101,6 +101,7 @@ import qualified Data.List.NonEmpty as NE
 
 #if defined(PLINTH)
 import qualified PlutusTx.Plugin
+import qualified PlinthPlugin
 import GHC.Driver.Monad (modifySession)
 #endif
 
@@ -278,7 +279,14 @@ main' postLoadMode units dflags0 args flagWarnings = do
                            ]
       plinth_static_plugin =
         StaticPlugin (PluginWithArgs PlutusTx.Plugin.plugin plinth_plugin_args)
-      static_plugins = [plinth_static_plugin]
+      plinthPlugin_plugin_mod_name = mkModuleName "PlinthPlugin"
+      plinthPlugin_plugin_args = [ opt
+                                 | (mod_name, opt) <- pluginModNameOpts dflags6
+                                 , mod_name == plinthPlugin_plugin_mod_name
+                                 ]
+      plinthPlugin_static_plugin =
+        StaticPlugin (PluginWithArgs PlinthPlugin.plugin plinthPlugin_plugin_args)
+      static_plugins = [plinth_static_plugin, plinthPlugin_static_plugin]
 
   modifySession $ \hsc_env ->
     let old_plugins = hsc_plugins hsc_env

@@ -92,7 +92,7 @@ Executable ghc
 
     if flag(plinth)
       cpp-options: -DPLINTH
-      build-depends: plutus-tx-plugin
+      build-depends: plutus-tx-plugin, plinth-plugin
 
     Other-Extensions:
         CPP

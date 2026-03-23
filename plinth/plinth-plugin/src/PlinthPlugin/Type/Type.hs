@@ -1,0 +1,56 @@
+{-# LANGUAGE CPP #-}
+
+module PlinthPlugin.Type.Type
+  ( Type (..),
+    make,
+    qualifiedName,
+  )
+where
+
+import qualified Control.Monad as Monad
+import qualified PlinthPlugin.Hsc as Hsc
+import qualified PlinthPlugin.Type.Constructor as Constructor
+import qualified GHC.Hs as Ghc
+import qualified GHC.Hs.Type as Ghc
+import qualified GHC.Plugins as Ghc
+import qualified Language.Haskell.Syntax.Type as Syntax
+
+data Type = Type
+  { name :: Ghc.IdP Ghc.GhcPs,
+    variables :: [Ghc.IdP Ghc.GhcPs],
+    constructors :: [Constructor.Constructor]
+  }
+
+make ::
+  Ghc.LIdP Ghc.GhcPs ->
+  Ghc.LHsQTyVars Ghc.GhcPs ->
+  [Ghc.LConDecl Ghc.GhcPs] ->
+  Ghc.SrcSpan ->
+  Ghc.Hsc Type
+make lIdP lHsQTyVars lConDecls srcSpan = do
+  lHsTyVarBndrs <- case lHsQTyVars of
+    Ghc.HsQTvs _ hsq_explicit -> pure hsq_explicit
+  theVariables <- Monad.forM lHsTyVarBndrs $ \lHsTyVarBndr ->
+    case Ghc.unLoc lHsTyVarBndr of
+#if __GLASGOW_HASKELL__ >= 910
+      Ghc.HsTvb _ _ (Ghc.HsBndrVar _ (Ghc.L _ var)) _ -> pure var
+#else
+      Ghc.UserTyVar _ _ (Ghc.L _ var) -> pure var
+      Ghc.KindedTyVar _ _ (Ghc.L _ var) _ -> pure var
+#endif
+      _ -> Hsc.throwError srcSpan $ Ghc.text "unknown type variable binder"
+  theConstructors <- mapM (Constructor.make srcSpan) lConDecls
+  pure
+    Type
+      { name = Ghc.unLoc lIdP,
+        variables = theVariables,
+        constructors = theConstructors
+      }
+
+qualifiedName :: Ghc.ModuleName -> Type -> String
+qualifiedName moduleName type_ =
+  mconcat
+    [ Ghc.moduleNameString moduleName,
+      ".",
+      Ghc.occNameString . Ghc.rdrNameOcc $ name type_
+    ]
