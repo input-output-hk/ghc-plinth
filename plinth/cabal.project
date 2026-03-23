@@ -44,7 +44,7 @@ source-repository-package
     tag: 211b95baad422966c9e719ed70cbc189c58eaae5
 
 
-packages: ./ghc
+packages: ./ghc ./evoke
 
 optional-packages:
   ../plutus/plutus-tx-plugin
