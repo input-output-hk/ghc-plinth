@@ -274,5 +274,64 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
 # create bindist archive after fixup
 echo "creating bindist archive..."
 BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
+BINDIST_TARBALL="$BASE/_build/bindist/$BINDIST_NAME.tar.xz"
 (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
+
+# generate ghcup metadata for the bindist
+# See Note [Ghcup metadata generation] below
+echo "generating ghcup metadata..."
+
+TARBALL_HASH=$(sha256sum "$BINDIST_TARBALL" | cut -d' ' -f1)
+TARBALL_URI="file://$BINDIST_TARBALL"
+
+# map target platform to ghcup architecture/platform identifiers
+ARCH_COMPONENT=$(echo "$TARGET_PLATFORM" | cut -d'-' -f1)
+case "$ARCH_COMPONENT" in
+    x86_64)        GHCUP_ARCH="A_64" ;;
+    i386|i686)     GHCUP_ARCH="A_32" ;;
+    aarch64)       GHCUP_ARCH="A_ARM64" ;;
+    armv7l)        GHCUP_ARCH="A_ARM" ;;
+    *)             echo "warning: unknown architecture $ARCH_COMPONENT, defaulting to A_64"
+                   GHCUP_ARCH="A_64" ;;
+esac
+
+case "$UNAME_S" in
+    MINGW*|MSYS*) GHCUP_PLATFORM="Windows" ;;
+    Darwin*)      GHCUP_PLATFORM="Darwin" ;;
+    *)            GHCUP_PLATFORM="Linux_UnknownLinux" ;;
+esac
+
+METADATA_FILE="$BASE/_build/bindist/$BINDIST_NAME-ghcup-metadata.yaml"
+
+cat > "$METADATA_FILE" <<METADATA_EOF
+toolRequirements: {}
+ghcupDownloads:
+  plinth:
+    $VERSION:
+      viTags: []
+      viArch:
+        $GHCUP_ARCH:
+          $GHCUP_PLATFORM:
+            unknown_versioning:
+              dlHash: $TARBALL_HASH
+              dlSubdir: $BINDIST_NAME
+              dlUri: $TARBALL_URI
+              dlInstallInfo:
+                configArgs:
+                  - "--prefix=\${PREFIX}"
+                configFile: "configure"
+                makeArgs: ["DESTDIR=\${TMPDIR}", "install"]
+                preserveMtimes: True
+                exeSymLinked:
+                  - ["bin/hsc2hs", "uplc-hsc2hs"]
+                  - ["bin/haddock", "uplc-haddock"]
+                  - ["bin/hpc", "uplc-hpc"]
+                  - ["bin/uplc-ghc", "uplc-ghc"]
+                  - ["bin/ghc-pkg", "uplc-ghc-pkg"]
+                  - ["bin/hp2ps", "uplc-hp2ps"]
+METADATA_EOF
+
+echo "ghcup metadata written to: $METADATA_FILE"
+echo "  tarball hash: $TARBALL_HASH"
+echo "  tarball URI:  $TARBALL_URI"
 
