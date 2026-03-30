@@ -34,6 +34,10 @@ jobs:
             os: ubuntu-22.04-arm
             container: debian:11
             shell: bash
+          - name: aarch64-linux-musl
+            os: ubuntu-22.04-arm
+            docker: alpine:3.20
+            shell: bash
           - name: aarch64-darwin
             os: macos-15
             shell: bash
@@ -127,6 +131,7 @@ jobs:
       run: brew install autoconf automake
 
     - uses: haskell-actions/setup@v2
+      if: ${{ !matrix.docker }}
       name: Setup Haskell tools
       with:
         ghc-version: '9.6.7'
@@ -134,7 +139,40 @@ jobs:
         cabal-update: true
 
     - name: Build bindist
+      if: ${{ !matrix.docker }}
       run: ./plinth-build.sh
+
+    # For entries that can't use container: (Alpine on ARM), run the
+    # entire build inside Docker. The workspace is mounted from the host
+    # so checkout/submodules done above are available.
+    - name: Build bindist (Docker)
+      if: ${{ matrix.docker }}
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" \
+          -w /workspace \
+          -e RELEASE="${{ env.RELEASE }}" \
+          ${{ matrix.docker }} sh -c '
+            set -eux
+            apk update
+            apk add \
+              alpine-sdk autoconf automake bash build-base coreutils \
+              curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
+              ncurses-dev ncurses-libs ncurses-static \
+              perl python3 sudo wget xz zlib-dev zlib-static \
+              patchelf findutils llvm17 clang17
+
+            # Install GHCup + GHC + cabal
+            curl --proto "=https" --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
+              BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
+              BOOTSTRAP_HASKELL_GHC_VERSION=9.6.7 \
+              BOOTSTRAP_HASKELL_CABAL_VERSION=latest \
+              sh
+            . "$HOME/.ghcup/env"
+
+            git config --global --add safe.directory /workspace
+            ./plinth-build.sh
+          '
 
     - name: Upload bindist
       uses: ./.github/actions/upload
@@ -228,6 +266,12 @@ jobs:
             shell: bash
             bindist: aarch64-linux-glibc
             pkg: apt
+          # Test aarch64-linux-musl bindist (Docker, not container:)
+          - name: aarch64-linux / alpine-3.20
+            os: ubuntu-22.04-arm
+            docker: alpine:3.20
+            shell: bash
+            bindist: aarch64-linux-musl
           - name: aarch64-darwin
             os: macos-15
             shell: bash
@@ -336,8 +380,29 @@ jobs:
         path: _build/bindist/
 
     - name: Verify bindist
-      if: runner.os != 'Windows'
+      if: runner.os != 'Windows' && !matrix.docker
       run: ./verify-bindist-relocatable.sh
+
+    # For Docker-based test entries (Alpine on ARM), run verification
+    # inside Docker with the workspace mounted from the host.
+    - name: Verify bindist (Docker)
+      if: ${{ matrix.docker }}
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" \
+          -w /workspace \
+          -e RUN_PLINTH_TEST=0 \
+          ${{ matrix.docker }} sh -c '
+            set -eux
+            apk update
+            apk add \
+              gcc g++ musl-dev make autoconf automake curl git \
+              gmp-dev ncurses-dev zlib-dev libffi-dev \
+              file binutils findutils patchelf bash coreutils
+
+            git config --global --add safe.directory /workspace
+            ./verify-bindist-relocatable.sh
+          '
 
     # On Windows the bindist has no configure script; verify by
     # extracting and running the relocatable binaries directly.

@@ -271,9 +271,19 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     done
 )
 
+# Detect C library (musl vs glibc) on Linux
+LIBC_SUFFIX=""
+case "$UNAME_S" in
+    Linux*)
+        if ldd --version 2>&1 | grep -qi musl; then
+            LIBC_SUFFIX="-musl"
+        fi
+        ;;
+esac
+
 # create bindist archive after fixup
 echo "creating bindist archive..."
-BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
+BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM${LIBC_SUFFIX}"
 BINDIST_TARBALL="$BASE/_build/bindist/$BINDIST_NAME.tar.xz"
 (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
 
@@ -298,7 +308,13 @@ esac
 case "$UNAME_S" in
     MINGW*|MSYS*) GHCUP_PLATFORM="Windows" ;;
     Darwin*)      GHCUP_PLATFORM="Darwin" ;;
-    *)            GHCUP_PLATFORM="Linux_UnknownLinux" ;;
+    *)
+        if [ -n "$LIBC_SUFFIX" ]; then
+            GHCUP_PLATFORM="Linux_Alpine"
+        else
+            GHCUP_PLATFORM="Linux_UnknownLinux"
+        fi
+        ;;
 esac
 
 METADATA_FILE="$BASE/_build/bindist/$BINDIST_NAME-ghcup-metadata.yaml"
