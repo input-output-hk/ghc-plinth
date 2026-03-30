@@ -29,6 +29,14 @@ jobs:
             os: ubuntu-latest
             container: alpine:3.20
             shell: bash
+          - name: aarch64-linux-glibc
+            os: ubuntu-22.04-arm
+            container: debian:11
+            shell: bash
+          - name: aarch64-linux-musl
+            os: ubuntu-22.04-arm
+            container: alpine:3.20
+            shell: bash
           - name: aarch64-darwin
             os: macos-15
             shell: bash
@@ -57,6 +65,16 @@ jobs:
           gmp-devel ncurses-devel zlib-devel libffi-devel \
           openssh-clients patchelf
 
+    - name: Install system dependencies (Debian)
+      if: matrix.container == 'debian:11'
+      run: |
+        apt-get update
+        apt-get install -y \
+          gcc g++ make autoconf automake \
+          python3 tar xz-utils curl git perl \
+          libgmp-dev libncurses-dev zlib1g-dev libffi-dev \
+          openssh-client patchelf
+
     - name: Install system dependencies (Alpine)
       if: matrix.container == 'alpine:3.20'
       run: |
@@ -76,6 +94,11 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: false
+
+    - name: Mark workspace as safe for git
+      if: matrix.container
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     - name: Setup SSH for submodules
       shell: bash
@@ -188,6 +211,33 @@ jobs:
             shell: bash
             bindist: x86_64-linux-musl
             pkg: apk
+          # Test aarch64-linux-glibc bindist
+          - name: aarch64-linux / debian-11
+            os: ubuntu-22.04-arm
+            container: debian:11
+            shell: bash
+            bindist: aarch64-linux-glibc
+            pkg: apt
+            full_test: true
+          - name: aarch64-linux / debian-12
+            os: ubuntu-22.04-arm
+            container: debian:12
+            shell: bash
+            bindist: aarch64-linux-glibc
+            pkg: apt
+          - name: aarch64-linux / ubuntu-24.04
+            os: ubuntu-22.04-arm
+            container: ubuntu:24.04
+            shell: bash
+            bindist: aarch64-linux-glibc
+            pkg: apt
+          # Test aarch64-linux-musl bindist
+          - name: aarch64-linux / alpine-3.20
+            os: ubuntu-22.04-arm
+            container: alpine:3.20
+            shell: bash
+            bindist: aarch64-linux-musl
+            pkg: apk
           - name: aarch64-darwin
             os: macos-15
             shell: bash
@@ -246,6 +296,11 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: false
+
+    - name: Mark workspace as safe for git
+      if: matrix.container
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
     # Submodules are needed on Unix for the plinth test suite
     # (run as part of verify-bindist-relocatable.sh)
