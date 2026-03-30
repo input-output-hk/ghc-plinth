@@ -16,12 +16,18 @@ jobs:
   build:
     name: Build / ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: x86_64-linux
+          - name: x86_64-linux-glibc
             os: ubuntu-latest
+            container: rockylinux:8
+            shell: bash
+          - name: x86_64-linux-musl
+            os: ubuntu-latest
+            container: alpine:3.20
             shell: bash
           - name: aarch64-darwin
             os: macos-15
@@ -39,17 +45,28 @@ jobs:
         shell: ${{ matrix.shell }}
 
     steps:
-    - name: Free disk space
-      if: runner.os == 'Linux'
-      uses: jlumbroso/free-disk-space@main
-      with:
-        tool-cache: false
-        android: true
-        dotnet: true
-        haskell: false
-        large-packages: false
-        docker-images: true
-        swap-storage: true
+    - name: Install system dependencies (Rocky Linux)
+      if: matrix.container == 'rockylinux:8'
+      run: |
+        dnf install -y 'dnf-command(config-manager)'
+        dnf config-manager --set-enabled powertools
+        dnf install -y epel-release
+        dnf install -y --allowerasing \
+          gcc gcc-c++ make autoconf automake \
+          python3 tar xz curl git perl which findutils \
+          gmp-devel ncurses-devel zlib-devel libffi-devel \
+          openssh-clients patchelf
+
+    - name: Install system dependencies (Alpine)
+      if: matrix.container == 'alpine:3.20'
+      run: |
+        apk update
+        apk add \
+          alpine-sdk autoconf automake bash build-base coreutils \
+          curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
+          ncurses-dev ncurses-libs ncurses-static \
+          perl python3 sudo wget xz zlib-dev zlib-static \
+          patchelf findutils llvm17 clang17
 
     - name: Configure git for Windows
       if: runner.os == 'Windows'
@@ -115,27 +132,117 @@ jobs:
     name: Test / ${{ matrix.name }}
     needs: build
     runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          - name: x86_64-linux
+          # Test x86_64-linux-glibc bindist across distros
+          - name: x86_64-linux / rocky-8
             os: ubuntu-latest
+            container: rockylinux:8
             shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: yum
+            full_test: true
+          - name: x86_64-linux / rocky-9
+            os: ubuntu-latest
+            container: rockylinux:9
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: dnf
+          - name: x86_64-linux / debian-11
+            os: ubuntu-latest
+            container: debian:11
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: apt
+          - name: x86_64-linux / debian-12
+            os: ubuntu-latest
+            container: debian:12
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: apt
+          - name: x86_64-linux / ubuntu-22.04
+            os: ubuntu-latest
+            container: ubuntu:22.04
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: apt
+          - name: x86_64-linux / ubuntu-24.04
+            os: ubuntu-latest
+            container: ubuntu:24.04
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: apt
+          - name: x86_64-linux / fedora-42
+            os: ubuntu-latest
+            container: fedora:42
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: dnf
+          # Test x86_64-linux-musl bindist
+          - name: x86_64-linux / alpine-3.20
+            os: ubuntu-latest
+            container: alpine:3.20
+            shell: bash
+            bindist: x86_64-linux-musl
+            pkg: apk
           - name: aarch64-darwin
             os: macos-15
             shell: bash
+            bindist: aarch64-darwin
           - name: x86_64-darwin
             os: macos-15-large
             shell: bash
+            bindist: x86_64-darwin
           - name: x86_64-windows
             os: windows-latest
             shell: msys2 {0}
+            bindist: x86_64-windows
+    env:
+      # Only run the full plinth test suite on selected entries
+      RUN_PLINTH_TEST: ${{ matrix.full_test && '1' || '0' }}
     defaults:
       run:
         shell: ${{ matrix.shell }}
 
     steps:
+    - name: Install test dependencies (apt)
+      if: matrix.pkg == 'apt'
+      run: |
+        apt-get update
+        apt-get install -y \
+          gcc g++ make autoconf automake curl git \
+          libgmp-dev libncurses-dev zlib1g-dev libffi-dev \
+          openssh-client file binutils patchelf
+
+    - name: Install test dependencies (dnf)
+      if: matrix.pkg == 'dnf'
+      run: |
+        dnf install -y \
+          gcc gcc-c++ make autoconf automake curl git \
+          gmp-devel ncurses-devel zlib-devel libffi-devel \
+          openssh-clients file binutils findutils patchelf
+
+    - name: Install test dependencies (yum)
+      if: matrix.pkg == 'yum'
+      run: |
+        dnf install -y epel-release
+        yum install -y \
+          gcc gcc-c++ make autoconf automake curl git \
+          gmp-devel ncurses-devel zlib-devel libffi-devel \
+          openssh-clients file binutils findutils patchelf
+
+    - name: Install test dependencies (apk)
+      if: matrix.pkg == 'apk'
+      run: |
+        apk update
+        apk add \
+          gcc g++ musl-dev make autoconf automake curl git \
+          gmp-dev ncurses-dev zlib-dev libffi-dev \
+          file binutils findutils patchelf bash coreutils
+
     - uses: actions/checkout@v4
       with:
         submodules: false
@@ -167,8 +274,9 @@ jobs:
         update: false
         install: tar xz
 
+    # Haskell tools needed for the full plinth test suite (cabal build/run)
     - uses: haskell-actions/setup@v2
-      if: runner.os != 'Windows'
+      if: matrix.full_test
       name: Setup Haskell tools
       with:
         ghc-version: '9.6.7'
@@ -178,7 +286,7 @@ jobs:
     - name: Download bindist
       uses: ./.github/actions/download
       with:
-        name: bindist-${{ matrix.name }}
+        name: bindist-${{ matrix.bindist }}
         path: _build/bindist/
 
     - name: Verify bindist
