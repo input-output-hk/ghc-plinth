@@ -22,17 +22,21 @@ jobs:
         include:
           - name: x86_64-linux
             os: ubuntu-latest
+            shell: bash
           - name: aarch64-darwin
             os: macos-14
+            shell: bash
           - name: x86_64-darwin
             os: macos-13
+            shell: bash
           - name: x86_64-windows
             os: windows-latest
+            shell: msys2 {0}
     env:
       RELEASE: ${{ inputs.release && '1' || '0' }}
     defaults:
       run:
-        shell: bash
+        shell: ${{ matrix.shell }}
 
     steps:
     - name: Free disk space
@@ -87,7 +91,6 @@ jobs:
 
     - name: Build bindist
       run: ./plinth-build.sh
-      shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash' }}
 
     - name: Upload bindist
       uses: ./.github/actions/upload
@@ -111,15 +114,19 @@ jobs:
         include:
           - name: x86_64-linux
             os: ubuntu-latest
+            shell: bash
           - name: aarch64-darwin
             os: macos-14
+            shell: bash
           - name: x86_64-darwin
             os: macos-13
+            shell: bash
           - name: x86_64-windows
             os: windows-latest
+            shell: msys2 {0}
     defaults:
       run:
-        shell: bash
+        shell: ${{ matrix.shell }}
 
     steps:
     - uses: actions/checkout@v4
