@@ -53,6 +53,7 @@ jobs:
 
     - name: Configure git for Windows
       if: runner.os == 'Windows'
+      shell: bash
       run: git config --global core.symlinks true
 
     - uses: actions/checkout@v4
@@ -60,6 +61,7 @@ jobs:
         submodules: false
 
     - name: Setup SSH for submodules
+      shell: bash
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -67,6 +69,7 @@ jobs:
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
     - name: Init and update submodules
+      shell: bash
       run: |
         git submodule sync
         git submodule update --init --recursive
@@ -137,6 +140,7 @@ jobs:
     # (run as part of verify-bindist-relocatable.sh)
     - name: Setup SSH for submodules
       if: runner.os != 'Windows'
+      shell: bash
       run: |
         mkdir -p ~/.ssh
         echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
@@ -145,6 +149,7 @@ jobs:
 
     - name: Init and update submodules
       if: runner.os != 'Windows'
+      shell: bash
       run: |
         git submodule sync
         git submodule update --init --recursive
