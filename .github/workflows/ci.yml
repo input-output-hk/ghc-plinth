@@ -5,6 +5,7 @@ on:
     types: [opened, synchronize]
   push:
     branches: [master, ghc-9.6-plinth]
+    tags: ['v*']
   workflow_dispatch:
     inputs:
       release:
@@ -33,10 +34,6 @@ jobs:
             os: ubuntu-22.04-arm
             container: debian:11
             shell: bash
-          - name: aarch64-linux-musl
-            os: ubuntu-22.04-arm
-            container: alpine:3.20
-            shell: sh
           - name: aarch64-darwin
             os: macos-15
             shell: bash
@@ -84,7 +81,7 @@ jobs:
           curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
           ncurses-dev ncurses-libs ncurses-static \
           perl python3 sudo wget xz zlib-dev zlib-static \
-          patchelf findutils llvm17 clang17
+          patchelf findutils llvm17 clang17 openssh-client
 
     - name: Configure git for Windows
       if: runner.os == 'Windows'
@@ -231,13 +228,6 @@ jobs:
             shell: bash
             bindist: aarch64-linux-glibc
             pkg: apt
-          # Test aarch64-linux-musl bindist
-          - name: aarch64-linux / alpine-3.20
-            os: ubuntu-22.04-arm
-            container: alpine:3.20
-            shell: sh
-            bindist: aarch64-linux-musl
-            pkg: apk
           - name: aarch64-darwin
             os: macos-15
             shell: bash
@@ -291,7 +281,8 @@ jobs:
         apk add \
           gcc g++ musl-dev make autoconf automake curl git \
           gmp-dev ncurses-dev zlib-dev libffi-dev \
-          file binutils findutils patchelf bash coreutils
+          file binutils findutils patchelf bash coreutils \
+          openssh-client
 
     - uses: actions/checkout@v4
       with:
@@ -364,3 +355,161 @@ jobs:
         _test/bindist/"$dir"/bin/uplc-ghc.exe -e 'putStrLn "hello"'
         echo "=== ghc-pkg check ==="
         _test/bindist/"$dir"/bin/ghc-pkg.exe check --no-user-package-db
+
+  release:
+    name: Release
+    needs: [build, test]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Download all bindist artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: bindist-*
+        path: artifacts/bindists/
+
+    - name: Download all metadata artifacts
+      uses: actions/download-artifact@v4
+      with:
+        pattern: metadata-*
+        path: artifacts/metadata/
+
+    - name: Collect release assets
+      run: |
+        mkdir -p release/
+        for dir in artifacts/bindists/*/; do
+          for tarball in "$dir"*.tar.xz; do
+            [ -f "$tarball" ] || continue
+            cp "$tarball" release/
+          done
+        done
+        echo "Release assets:"
+        ls -lh release/
+
+    - name: Merge ghcup metadata
+      run: |
+        pip install pyyaml
+        python3 << 'PYEOF'
+        import yaml, glob, os, copy
+
+        tag = os.environ['GITHUB_REF_NAME']
+        repo = os.environ['GITHUB_REPOSITORY']
+        base_url = f"https://github.com/{repo}/releases/download/{tag}"
+
+        # Collect all release tarball filenames for URL rewriting
+        release_files = set(os.listdir('release'))
+
+        merged = {'toolRequirements': {}, 'ghcupDownloads': {'plinth': {}}}
+
+        for f in sorted(glob.glob('artifacts/metadata/*/*.yaml')):
+            with open(f) as fh:
+                data = yaml.safe_load(fh)
+
+            for version, vinfo in data['ghcupDownloads']['plinth'].items():
+                if version not in merged['ghcupDownloads']['plinth']:
+                    merged['ghcupDownloads']['plinth'][version] = {
+                        'viTags': vinfo.get('viTags', []),
+                        'viArch': {}
+                    }
+
+                dest_arch = merged['ghcupDownloads']['plinth'][version]['viArch']
+                for arch, platforms in vinfo['viArch'].items():
+                    if arch not in dest_arch:
+                        dest_arch[arch] = {}
+
+                    for platform, versioning in platforms.items():
+                        entry = copy.deepcopy(versioning)
+                        # Rewrite dlUri from file:// to release asset URL
+                        for vkey in entry:
+                            vdata = entry[vkey]
+                            if isinstance(vdata, dict) and 'dlUri' in vdata:
+                                old_uri = vdata['dlUri']
+                                filename = os.path.basename(old_uri)
+                                if filename in release_files:
+                                    vdata['dlUri'] = f"{base_url}/{filename}"
+                                else:
+                                    print(f"WARNING: {filename} not in release assets")
+                                    vdata['dlUri'] = f"{base_url}/{filename}"
+
+                        dest_arch[arch][platform] = entry
+
+        os.makedirs('release', exist_ok=True)
+        with open('release/ghcup-metadata.yaml', 'w') as fh:
+            yaml.dump(merged, fh, default_flow_style=False, sort_keys=False)
+
+        print("Merged metadata written to release/ghcup-metadata.yaml")
+        with open('release/ghcup-metadata.yaml') as fh:
+            print(fh.read())
+        PYEOF
+
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        gh release create "$GITHUB_REF_NAME" \
+          --title "Plinth $GITHUB_REF_NAME" \
+          --generate-notes \
+          release/*
+
+    - name: Deploy metadata to GitHub Pages
+      run: |
+        git config user.name "github-actions[bot]"
+        git config user.email "github-actions[bot]@users.noreply.github.com"
+
+        # Fetch existing gh-pages metadata if it exists
+        EXISTING=""
+        if git fetch origin gh-pages 2>/dev/null; then
+          git show origin/gh-pages:ghcup-metadata.yaml > existing-metadata.yaml 2>/dev/null && EXISTING="existing-metadata.yaml" || true
+        fi
+
+        # Merge new version into existing metadata (cumulative channel)
+        python3 << PYEOF
+        import yaml, os
+
+        existing_file = "$EXISTING"
+        new_file = "release/ghcup-metadata.yaml"
+
+        if existing_file and os.path.exists(existing_file):
+            with open(existing_file) as fh:
+                existing = yaml.safe_load(fh) or {}
+        else:
+            existing = {}
+
+        with open(new_file) as fh:
+            new = yaml.safe_load(fh)
+
+        # Deep-merge: add new version entries into existing metadata
+        if 'ghcupDownloads' not in existing:
+            existing['ghcupDownloads'] = {}
+        if 'plinth' not in existing['ghcupDownloads']:
+            existing['ghcupDownloads']['plinth'] = {}
+        existing.setdefault('toolRequirements', {})
+
+        for version, vinfo in new['ghcupDownloads']['plinth'].items():
+            if version not in existing['ghcupDownloads']['plinth']:
+                existing['ghcupDownloads']['plinth'][version] = vinfo
+            else:
+                dest = existing['ghcupDownloads']['plinth'][version]
+                if 'viArch' not in dest:
+                    dest['viArch'] = {}
+                for arch, platforms in vinfo.get('viArch', {}).items():
+                    if arch not in dest['viArch']:
+                        dest['viArch'][arch] = {}
+                    dest['viArch'][arch].update(platforms)
+
+        with open('pages-metadata.yaml', 'w') as fh:
+            yaml.dump(existing, fh, default_flow_style=False, sort_keys=False)
+        PYEOF
+
+        # Commit to gh-pages branch
+        git checkout --orphan gh-pages-deploy
+        git rm -rf .
+        cp pages-metadata.yaml ghcup-metadata.yaml
+        git add ghcup-metadata.yaml
+        git commit -m "Update ghcup metadata for $GITHUB_REF_NAME"
+        git push -f origin HEAD:gh-pages
