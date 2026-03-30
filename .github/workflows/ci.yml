@@ -6,34 +6,50 @@ on:
   push:
     branches: [master, ghc-9.6-plinth]
   workflow_dispatch:
+    inputs:
+      release:
+        description: 'Build release bindists (with docs)'
+        type: boolean
+        default: false
 
 jobs:
-  cabal:
-    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+  build:
+    name: Build / ${{ matrix.name }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest]
-        ghc: ['9.6.7']
+        include:
+          - name: x86_64-linux
+            os: ubuntu-latest
+          - name: aarch64-darwin
+            os: macos-14
+          - name: x86_64-darwin
+            os: macos-13
+          - name: x86_64-windows
+            os: windows-latest
+    env:
+      RELEASE: ${{ inputs.release && '1' || '0' }}
+    defaults:
+      run:
+        shell: bash
 
     steps:
-
     - name: Free disk space
+      if: runner.os == 'Linux'
       uses: jlumbroso/free-disk-space@main
       with:
-        # this might remove tools that are actually needed,
-        # if set to "true" but frees about 6 GB
         tool-cache: false
-
-        # all of these default to true, but feel free to set to
-        # "false" if necessary for your workflow
         android: true
         dotnet: true
         haskell: false
         large-packages: false
         docker-images: true
         swap-storage: true
+
+    - name: Configure git for Windows
+      if: runner.os == 'Windows'
+      run: git config --global core.symlinks true
 
     - uses: actions/checkout@v4
       with:
@@ -48,19 +64,124 @@ jobs:
 
     - name: Init and update submodules
       run: |
-       git submodule sync
-       git submodule update --init --recursive
+        git submodule sync
+        git submodule update --init --recursive
+
+    - name: Setup MSYS2
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: inherit
+        update: false
+        install: >-
+          autoconf automake make tar xz patch curl
+          mingw-w64-x86_64-python
 
     - uses: haskell-actions/setup@v2
-      id: setup
       name: Setup Haskell tools
       with:
-        ghc-version: ${{ matrix.ghc }}
-        cabal-version: "latest"
+        ghc-version: '9.6.7'
+        cabal-version: 'latest'
         cabal-update: true
 
-    - name: Build uplc-ghc
+    - name: Build bindist
       run: ./plinth-build.sh
+      shell: ${{ runner.os == 'Windows' && 'msys2 {0}' || 'bash' }}
 
-    # - name: Test uplc-ghc
-    #   run: ./plinth-test.sh
+    - name: Upload bindist
+      uses: ./.github/actions/upload
+      with:
+        name: bindist-${{ matrix.name }}
+        path: _build/bindist/*.tar.xz
+
+    - name: Upload metadata
+      uses: ./.github/actions/upload
+      with:
+        name: metadata-${{ matrix.name }}
+        path: _build/bindist/*-ghcup-metadata.yaml
+
+  test:
+    name: Test / ${{ matrix.name }}
+    needs: build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x86_64-linux
+            os: ubuntu-latest
+          - name: aarch64-darwin
+            os: macos-14
+          - name: x86_64-darwin
+            os: macos-13
+          - name: x86_64-windows
+            os: windows-latest
+    defaults:
+      run:
+        shell: bash
+
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # Submodules are needed on Unix for the plinth test suite
+    # (run as part of verify-bindist-relocatable.sh)
+    - name: Setup SSH for submodules
+      if: runner.os != 'Windows'
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+    - name: Init and update submodules
+      if: runner.os != 'Windows'
+      run: |
+        git submodule sync
+        git submodule update --init --recursive
+
+    - name: Setup MSYS2
+      if: runner.os == 'Windows'
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: inherit
+        update: false
+        install: tar xz
+
+    - uses: haskell-actions/setup@v2
+      if: runner.os != 'Windows'
+      name: Setup Haskell tools
+      with:
+        ghc-version: '9.6.7'
+        cabal-version: 'latest'
+        cabal-update: true
+
+    - name: Download bindist
+      uses: ./.github/actions/download
+      with:
+        name: bindist-${{ matrix.name }}
+        path: _build/bindist/
+
+    - name: Verify bindist
+      if: runner.os != 'Windows'
+      run: ./verify-bindist-relocatable.sh
+
+    # On Windows the bindist has no configure script; verify by
+    # extracting and running the relocatable binaries directly.
+    - name: Verify bindist (Windows)
+      if: runner.os == 'Windows'
+      shell: msys2 {0}
+      run: |
+        tarball=(_build/bindist/*.tar.xz)
+        dir=$(basename "$tarball" .tar.xz)
+        mkdir -p _test/bindist
+        tar -xf "$tarball" -C _test/bindist
+        echo "=== uplc-ghc --version ==="
+        _test/bindist/"$dir"/bin/uplc-ghc.exe --version
+        echo "=== uplc-ghc -e ==="
+        _test/bindist/"$dir"/bin/uplc-ghc.exe -e 'putStrLn "hello"'
+        echo "=== ghc-pkg check ==="
+        _test/bindist/"$dir"/bin/ghc-pkg.exe check --no-user-package-db
