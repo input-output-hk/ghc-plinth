@@ -85,6 +85,10 @@ jobs:
           autoconf automake make tar xz patch curl
           mingw-w64-x86_64-python
 
+    - name: Install autotools (macOS)
+      if: runner.os == 'macOS'
+      run: brew install autoconf automake
+
     - uses: haskell-actions/setup@v2
       name: Setup Haskell tools
       with:
