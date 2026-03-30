@@ -24,10 +24,10 @@ jobs:
             os: ubuntu-latest
             shell: bash
           - name: aarch64-darwin
-            os: macos-14
+            os: macos-15
             shell: bash
           - name: x86_64-darwin
-            os: macos-13
+            os: macos-15-large
             shell: bash
           - name: x86_64-windows
             os: windows-latest
@@ -119,10 +119,10 @@ jobs:
             os: ubuntu-latest
             shell: bash
           - name: aarch64-darwin
-            os: macos-14
+            os: macos-15
             shell: bash
           - name: x86_64-darwin
-            os: macos-13
+            os: macos-15-large
             shell: bash
           - name: x86_64-windows
             os: windows-latest
