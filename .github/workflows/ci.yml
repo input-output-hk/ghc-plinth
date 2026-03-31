@@ -147,6 +147,8 @@ jobs:
 
     - name: Build bindist
       if: ${{ !matrix.docker }}
+      env:
+        CLEAN_AFTER_BUILD: '1'
       run: ./plinth-build.sh
 
     # For entries that can't use container: (Alpine on ARM), run the
@@ -159,6 +161,7 @@ jobs:
           -v "$GITHUB_WORKSPACE:/workspace" \
           -w /workspace \
           -e RELEASE="${{ env.RELEASE }}" \
+          -e CLEAN_AFTER_BUILD=1 \
           ${{ matrix.docker }} sh -c '
             set -eux
             apk update

@@ -29,6 +29,7 @@ DEV_CONFIGURE_ARGS="$DEFAULT_CONFIGURE_ARGS"
 
 : ${REBUILD:=0} # set to 1 to force rebuild
 : ${RELEASE:=0} # set to 1 to build release version including documentation (more build dependencies)
+: ${CLEAN_AFTER_BUILD:=0} # set to 1 to remove intermediate artifacts after build (saves disk space, breaks incremental rebuilds)
 
 # program locations
 : ${GHC:=$(command -v ghc-9.6.7 2>/dev/null || true)}
@@ -176,6 +177,13 @@ if [ ! -x ./_build/stage1/bin/ghc ] || [ "$REBUILD" -eq 1 ]; then
   ./hadrian/build -j --flavour=$FLAVOUR $HADRIAN_ARGS binary-dist-dir
 fi
 
+# Free disk space: stage0 is no longer needed after stage1 and the
+# bindist directory have been built
+if [ "$CLEAN_AFTER_BUILD" -eq 1 ] && [ -d _build/stage0 ]; then
+  echo "cleaning intermediate build artifacts (_build/stage0)..."
+  rm -rf _build/stage0
+fi
+
 # build Plinth GHC
 
 STAGE="stage-plinth"
@@ -286,6 +294,11 @@ echo "creating bindist archive..."
 BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM${LIBC_SUFFIX}"
 BINDIST_TARBALL="$BASE/_build/bindist/$BINDIST_NAME.tar.xz"
 (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
+
+# Remove the unpacked bindist directory now that the tarball exists
+if [ "$CLEAN_AFTER_BUILD" -eq 1 ]; then
+  rm -rf "$BASE/_build/bindist/$BINDIST_NAME"
+fi
 
 # generate ghcup metadata for the bindist
 # See Note [Ghcup metadata generation] below
