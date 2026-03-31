@@ -24,12 +24,12 @@ jobs:
         include:
           - name: x86_64-linux-glibc
             os: ubuntu-latest
-            container: rockylinux:8
+            docker: rockylinux:8
             shell: bash
           - name: x86_64-linux-musl
             os: ubuntu-latest
-            container: alpine:3.20
-            shell: sh
+            docker: alpine:3.20
+            shell: bash
           - name: aarch64-linux-glibc
             os: ubuntu-22.04-arm
             container: debian:11
@@ -66,18 +66,6 @@ jobs:
         docker-images: true
         swap-storage: true
 
-    - name: Install system dependencies (Rocky Linux)
-      if: matrix.container == 'rockylinux:8'
-      run: |
-        dnf install -y 'dnf-command(config-manager)'
-        dnf config-manager --set-enabled powertools
-        dnf install -y epel-release
-        dnf install -y --allowerasing \
-          gcc gcc-c++ make autoconf automake \
-          python3 tar xz curl git perl which findutils diffutils \
-          gmp-devel ncurses-devel zlib-devel libffi-devel \
-          openssh-clients patchelf
-
     - name: Install system dependencies (Debian)
       if: matrix.container == 'debian:11'
       run: |
@@ -87,17 +75,6 @@ jobs:
           python3 tar xz-utils curl git perl \
           libgmp-dev libncurses-dev zlib1g-dev libffi-dev \
           openssh-client patchelf
-
-    - name: Install system dependencies (Alpine)
-      if: matrix.container == 'alpine:3.20'
-      run: |
-        apk update
-        apk add \
-          alpine-sdk autoconf automake bash build-base coreutils \
-          curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
-          ncurses-dev ncurses-libs ncurses-static \
-          perl python3 sudo wget xz zlib-dev zlib-static \
-          patchelf findutils llvm17 clang17 openssh-client
 
     - name: Configure git for Windows
       if: runner.os == 'Windows'
@@ -163,9 +140,10 @@ jobs:
         CLEAN_AFTER_BUILD: '1'
       run: ./plinth-build.sh
 
-    # For entries that can't use container: (Alpine on ARM), run the
-    # entire build inside Docker. The workspace is mounted from the host
-    # so checkout/submodules done above are available.
+    # For docker: entries, run the entire build inside Docker.
+    # The workspace is mounted from the host so checkout/submodules
+    # done above are available. Using docker: instead of container:
+    # allows the free-disk-space step to run on the host first.
     - name: Build bindist (Docker)
       if: ${{ matrix.docker }}
       run: |
@@ -176,13 +154,26 @@ jobs:
           -e CLEAN_AFTER_BUILD=1 \
           ${{ matrix.docker }} sh -c '
             set -eux
-            apk update
-            apk add \
-              alpine-sdk autoconf automake bash build-base coreutils \
-              curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
-              ncurses-dev ncurses-libs ncurses-static \
-              perl python3 sudo wget xz zlib-dev zlib-static \
-              patchelf findutils llvm17 clang17
+
+            # Install system dependencies (auto-detect distro)
+            if command -v apk >/dev/null 2>&1; then
+              apk update
+              apk add \
+                alpine-sdk autoconf automake bash build-base coreutils \
+                curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
+                ncurses-dev ncurses-libs ncurses-static \
+                perl python3 sudo wget xz zlib-dev zlib-static \
+                patchelf findutils llvm17 clang17
+            elif command -v dnf >/dev/null 2>&1; then
+              dnf install -y "dnf-command(config-manager)" || true
+              dnf config-manager --set-enabled powertools 2>/dev/null || true
+              dnf install -y epel-release 2>/dev/null || true
+              dnf install -y --allowerasing \
+                gcc gcc-c++ make autoconf automake \
+                python3 tar xz curl git perl which findutils diffutils \
+                gmp-devel ncurses-devel zlib-devel libffi-devel \
+                patchelf
+            fi
 
             # Install GHCup + GHC + cabal
             curl --proto "=https" --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
