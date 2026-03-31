@@ -56,15 +56,26 @@ jobs:
     steps:
     - name: Free disk space
       if: runner.os == 'Linux' && !matrix.container
-      uses: jlumbroso/free-disk-space@main
-      with:
-        tool-cache: false
-        android: true
-        dotnet: true
-        haskell: false
-        large-packages: false
-        docker-images: true
-        swap-storage: true
+      run: |
+        echo "=== Before cleanup ==="
+        df -h /
+        sudo rm -rf \
+          /usr/local/lib/android \
+          /usr/share/dotnet \
+          /usr/share/swift \
+          /usr/local/.ghcup \
+          /usr/local/share/boost \
+          /usr/local/share/powershell \
+          /usr/local/share/chromium \
+          /usr/local/lib/node_modules \
+          /opt/hostedtoolcache \
+          /opt/az \
+          /opt/microsoft \
+          /opt/pipx \
+          /imagegeneration
+        sudo docker image prune -af 2>/dev/null || true
+        echo "=== After cleanup ==="
+        df -h /
 
     - name: Install system dependencies (Debian)
       if: matrix.container == 'debian:11'
