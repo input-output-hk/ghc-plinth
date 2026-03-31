@@ -107,8 +107,9 @@ jobs:
         # Redirect gitlab.haskell.org submodules to GitHub mirrors (much faster)
         git config --global url."https://github.com/ghc/packages-".insteadOf "https://gitlab.haskell.org/ghc/packages/"
         git config --global url."https://github.com/ghc/".insteadOf "https://gitlab.haskell.org/ghc/"
-        # packages-exceptions has no GitHub mirror; keep the original URL
+        # Keep these on gitlab (missing or stale GitHub mirrors)
         git config --global url."https://gitlab.haskell.org/ghc/packages/exceptions.git".insteadOf "https://gitlab.haskell.org/ghc/packages/exceptions.git"
+        git config --global url."https://gitlab.haskell.org/ghc/libffi-tarballs.git".insteadOf "https://gitlab.haskell.org/ghc/libffi-tarballs.git"
 
     - name: Setup SSH for submodules
       shell: bash
@@ -185,6 +186,7 @@ jobs:
             git config --global url."https://github.com/ghc/packages-".insteadOf "https://gitlab.haskell.org/ghc/packages/"
             git config --global url."https://github.com/ghc/".insteadOf "https://gitlab.haskell.org/ghc/"
             git config --global url."https://gitlab.haskell.org/ghc/packages/exceptions.git".insteadOf "https://gitlab.haskell.org/ghc/packages/exceptions.git"
+            git config --global url."https://gitlab.haskell.org/ghc/libffi-tarballs.git".insteadOf "https://gitlab.haskell.org/ghc/libffi-tarballs.git"
             ./plinth-build.sh
           '
 
@@ -358,6 +360,7 @@ jobs:
         git config --global url."https://github.com/ghc/packages-".insteadOf "https://gitlab.haskell.org/ghc/packages/"
         git config --global url."https://github.com/ghc/".insteadOf "https://gitlab.haskell.org/ghc/"
         git config --global url."https://gitlab.haskell.org/ghc/packages/exceptions.git".insteadOf "https://gitlab.haskell.org/ghc/packages/exceptions.git"
+        git config --global url."https://gitlab.haskell.org/ghc/libffi-tarballs.git".insteadOf "https://gitlab.haskell.org/ghc/libffi-tarballs.git"
 
     # Submodules are needed on Unix for the plinth test suite
     # (run as part of verify-bindist-relocatable.sh)
