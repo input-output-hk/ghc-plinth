@@ -176,8 +176,10 @@ cmd_update() {
 
         git config "submodule.$name.url" "$cache_path"
 
+        # Allow local file transport so git can clone from the bare mirror.
+        # (Git >= 2.38.1 blocks file:// by default.)
         # shellcheck disable=SC2086
-        if ! git submodule update $init_flag $recursive_flag -- "$path" 2>&1; then
+        if ! git -c protocol.file.allow=always submodule update $init_flag $recursive_flag -- "$path" 2>&1; then
             echo "  Cache update failed — retrying from upstream..."
             git config "submodule.$name.url" "$url"
             # shellcheck disable=SC2086
