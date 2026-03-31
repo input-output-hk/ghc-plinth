@@ -109,13 +109,18 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+    - name: Restore submodule mirror cache
+      uses: actions/cache@v4
+      with:
+        path: submodule-cache
+        key: submodule-mirrors-${{ runner.os }}-${{ runner.arch }}
+
     - name: Init and update submodules
       shell: bash
       env:
         GIT_SSH_COMMAND: "ssh -i $HOME/.ssh/id_rsa -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o StrictHostKeyChecking=yes"
-      run: |
-        git submodule sync
-        git submodule update --init --recursive
+        SUBMODULE_CACHE: submodule-cache
+      run: ./submodule-cache.sh update --init
 
     - name: Setup MSYS2
       if: runner.os == 'Windows'
@@ -289,6 +294,7 @@ jobs:
     env:
       # Only run the full plinth test suite on selected entries
       RUN_PLINTH_TEST: ${{ matrix.full_test && '1' || '0' }}
+      RUN_PLUGIN_TEST: ${{ matrix.full_test && '1' || '0' }}
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -350,14 +356,20 @@ jobs:
         chmod 600 ~/.ssh/id_rsa
         ssh-keyscan github.com >> ~/.ssh/known_hosts
 
+    - name: Restore submodule mirror cache
+      if: runner.os != 'Windows'
+      uses: actions/cache@v4
+      with:
+        path: submodule-cache
+        key: submodule-mirrors-${{ runner.os }}-${{ runner.arch }}
+
     - name: Init and update submodules
       if: runner.os != 'Windows'
       shell: bash
       env:
         GIT_SSH_COMMAND: "ssh -i $HOME/.ssh/id_rsa -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o StrictHostKeyChecking=yes"
-      run: |
-        git submodule sync
-        git submodule update --init --recursive
+        SUBMODULE_CACHE: submodule-cache
+      run: ./submodule-cache.sh update --init
 
     - name: Setup MSYS2
       if: runner.os == 'Windows'
