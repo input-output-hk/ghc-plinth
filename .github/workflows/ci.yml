@@ -62,7 +62,7 @@ jobs:
         dnf install -y epel-release
         dnf install -y --allowerasing \
           gcc gcc-c++ make autoconf automake \
-          python3 tar xz curl git perl which findutils \
+          python3 tar xz curl git perl which findutils diffutils \
           gmp-devel ncurses-devel zlib-devel libffi-devel \
           openssh-clients patchelf
 
