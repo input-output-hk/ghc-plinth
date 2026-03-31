@@ -54,6 +54,18 @@ jobs:
         shell: ${{ matrix.shell }}
 
     steps:
+    - name: Free disk space
+      if: runner.os == 'Linux' && !matrix.container
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: false
+        large-packages: false
+        docker-images: true
+        swap-storage: true
+
     - name: Install system dependencies (Rocky Linux)
       if: matrix.container == 'rockylinux:8'
       run: |
