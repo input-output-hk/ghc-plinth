@@ -95,7 +95,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: false
-        ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
 
     - name: Mark workspace as safe for git
       if: matrix.container
@@ -111,8 +110,18 @@ jobs:
         # packages-exceptions has no GitHub mirror; keep the original URL
         git config --global url."https://gitlab.haskell.org/ghc/packages/exceptions.git".insteadOf "https://gitlab.haskell.org/ghc/packages/exceptions.git"
 
+    - name: Setup SSH for submodules
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
     - name: Init and update submodules
       shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i $HOME/.ssh/id_rsa -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o StrictHostKeyChecking=yes"
       run: |
         git submodule sync
         git submodule update --init --recursive
@@ -336,7 +345,6 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: false
-        ssh-key: ${{ secrets.SUBMODULE_SSH_KEY }}
 
     - name: Mark workspace as safe for git
       if: matrix.container
@@ -353,9 +361,20 @@ jobs:
 
     # Submodules are needed on Unix for the plinth test suite
     # (run as part of verify-bindist-relocatable.sh)
+    - name: Setup SSH for submodules
+      if: runner.os != 'Windows'
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
     - name: Init and update submodules
       if: runner.os != 'Windows'
       shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i $HOME/.ssh/id_rsa -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o StrictHostKeyChecking=yes"
       run: |
         git submodule sync
         git submodule update --init --recursive
