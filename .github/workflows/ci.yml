@@ -101,13 +101,6 @@ jobs:
       shell: bash
       run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
 
-    - name: Use GitHub mirrors for submodules
-      shell: bash
-      run: |
-        # Redirect gitlab.haskell.org submodules to GitHub mirrors (much faster)
-        git config --global url."https://github.com/ghc/packages-".insteadOf "https://gitlab.haskell.org/ghc/packages/"
-        git config --global url."https://github.com/ghc/".insteadOf "https://gitlab.haskell.org/ghc/"
-
     - name: Setup SSH for submodules
       shell: bash
       run: |
@@ -178,8 +171,6 @@ jobs:
             . "$HOME/.ghcup/env"
 
             git config --global --add safe.directory /workspace
-            git config --global url."https://github.com/ghc/packages-".insteadOf "https://gitlab.haskell.org/ghc/packages/"
-            git config --global url."https://github.com/ghc/".insteadOf "https://gitlab.haskell.org/ghc/"
             ./plinth-build.sh
           '
 
@@ -345,13 +336,6 @@ jobs:
       if: matrix.container
       shell: bash
       run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
-
-    - name: Use GitHub mirrors for submodules
-      if: runner.os != 'Windows'
-      shell: bash
-      run: |
-        git config --global url."https://github.com/ghc/packages-".insteadOf "https://gitlab.haskell.org/ghc/packages/"
-        git config --global url."https://github.com/ghc/".insteadOf "https://gitlab.haskell.org/ghc/"
 
     # Submodules are needed on Unix for the plinth test suite
     # (run as part of verify-bindist-relocatable.sh)
