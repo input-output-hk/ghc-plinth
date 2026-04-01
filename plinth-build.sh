@@ -262,9 +262,12 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
             fi
 
             # Add wrapper scripts so `make install` creates $PREFIX/bin/uplc-ghc
-            mkdir -p "$dir/wrappers"
-            echo 'exec "$executablename" -B"$libdir" ${1+"$@"}' > "$dir/wrappers/uplc-ghc-$VERSION"
-            ( cd "$dir/wrappers" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
+            # (Unix only; Windows uses compiled C wrappers instead)
+            if [ "$IS_WINDOWS" -eq 0 ]; then
+                mkdir -p "$dir/wrappers"
+                echo 'exec "$executablename" -B"$libdir" ${1+"$@"}' > "$dir/wrappers/uplc-ghc-$VERSION"
+                ( cd "$dir/wrappers" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
+            fi
 
             # remove the boot GHC from the bindist
             rm -f "$dir"/bin/ghc
