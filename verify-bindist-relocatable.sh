@@ -19,6 +19,7 @@ REPO_ROOT="$SCRIPT_DIR"
 PREFIX_A="${PREFIX_A:-/tmp/plinth-reloctest-alpha/usr/local}"
 PREFIX_B="${PREFIX_B:-/tmp/plinth-reloctest-beta/opt/plinth}"
 RUN_PLINTH_TEST="${RUN_PLINTH_TEST:-1}"
+RUN_PLUGIN_TEST="${RUN_PLUGIN_TEST:-0}"
 CLEANUP="${CLEANUP:-1}"
 # don't clean by default
 SKIP_CLEAN_BUILD="${SKIP_CLEAN_BUILD:-1}"
@@ -313,6 +314,35 @@ run_plinth_test() {
     fi
 }
 
+# --- Run plutus-tx-plugin tests ---
+
+run_plugin_tests() {
+    local prefix="$1"
+    local label="$2"
+    local suffix="$3"
+    echo ""
+    echo "=== Running plutus-tx-plugin tests: $label ($prefix) ==="
+
+    local ghc="$prefix/bin/uplc-ghc"
+    local cabal_project_args="--project-file=cabal.project.plugin-test"
+    local cabal_args="--remote-repo-cache $REPO_ROOT/_build/packages --store-dir=$REPO_ROOT/_build/store-plugin-$suffix --logs-dir=$REPO_ROOT/_build/logs-plugin-$suffix"
+    local cabal_build_args="-j -w $ghc --builddir=$REPO_ROOT/_build/build-plugin-$suffix"
+
+    (
+        cd "$REPO_ROOT/plutus"
+        echo "  Updating cabal index..."
+        cabal $cabal_project_args $cabal_args update
+        echo "  Running plutus-tx-plugin-tests..."
+        cabal $cabal_project_args $cabal_args test $cabal_build_args plutus-tx-plugin-tests
+    )
+
+    if [ $? -eq 0 ]; then
+        pass "plutus-tx-plugin tests pass with $label"
+    else
+        fail "plutus-tx-plugin tests failed with $label"
+    fi
+}
+
 # --- Main ---
 
 main() {
@@ -356,6 +386,15 @@ main() {
     else
         echo ""
         echo "=== Skipping plinth test suite (RUN_PLINTH_TEST=0) ==="
+    fi
+
+    # Run plutus-tx-plugin test suite (only on one prefix, not a
+    # relocatability concern)
+    if [ "$RUN_PLUGIN_TEST" -eq 1 ]; then
+        run_plugin_tests "$PREFIX_A" "prefix-A" "a"
+    else
+        echo ""
+        echo "=== Skipping plutus-tx-plugin tests (RUN_PLUGIN_TEST=0) ==="
     fi
 
     # Summary
