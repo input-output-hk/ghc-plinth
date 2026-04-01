@@ -41,9 +41,9 @@ jobs:
           - name: aarch64-darwin
             os: macos-15
             shell: bash
-          - name: x86_64-darwin
-            os: macos-15-large
-            shell: bash
+          # - name: x86_64-darwin
+          #   os: macos-15-large
+          #   shell: bash
           - name: x86_64-windows
             os: windows-latest
             shell: msys2 {0}
@@ -300,10 +300,10 @@ jobs:
             os: macos-15
             shell: bash
             bindist: aarch64-darwin
-          - name: x86_64-darwin
-            os: macos-15-large
-            shell: bash
-            bindist: x86_64-darwin
+          # - name: x86_64-darwin
+          #   os: macos-15-large
+          #   shell: bash
+          #   bindist: x86_64-darwin
           - name: x86_64-windows
             os: windows-latest
             shell: msys2 {0}
