@@ -48,7 +48,7 @@ jobs:
             os: windows-latest
             shell: msys2 {0}
     env:
-      RELEASE: ${{ inputs.release && '1' || '0' }}
+      RELEASE: '1'
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -210,9 +210,159 @@ jobs:
         name: metadata-${{ matrix.name }}
         path: _build/bindist/*-ghcup-metadata.yaml
 
+  # Dev builds with assertions (RELEASE=0) for platforms that run full_test
+  build-dev:
+    name: Build Dev / ${{ matrix.name }}
+    runs-on: ${{ matrix.os }}
+    container: ${{ matrix.container }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: x86_64-linux-glibc
+            os: ubuntu-latest
+            docker: rockylinux:8
+            shell: bash
+          - name: aarch64-linux-glibc
+            os: ubuntu-22.04-arm
+            container: debian:11
+            shell: bash
+    env:
+      RELEASE: '0'
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+
+    steps:
+    - name: Free disk space
+      if: runner.os == 'Linux' && !matrix.container
+      run: |
+        echo "=== Before cleanup ==="
+        df -h /
+        sudo rm -rf \
+          /usr/local/lib/android \
+          /usr/share/dotnet \
+          /usr/share/swift \
+          /usr/local/.ghcup \
+          /usr/local/share/boost \
+          /usr/local/share/powershell \
+          /usr/local/share/chromium \
+          /usr/local/lib/node_modules \
+          /opt/hostedtoolcache \
+          /opt/az \
+          /opt/microsoft \
+          /opt/pipx \
+          /imagegeneration
+        sudo docker image prune -af 2>/dev/null || true
+        echo "=== After cleanup ==="
+        df -h /
+
+    - name: Install system dependencies (Debian)
+      if: matrix.container == 'debian:11'
+      run: |
+        apt-get update
+        apt-get install -y \
+          gcc g++ make autoconf automake \
+          python3 tar xz-utils curl git perl \
+          libgmp-dev libncurses-dev zlib1g-dev libffi-dev \
+          openssh-client patchelf
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - name: Mark workspace as safe for git
+      if: matrix.container
+      shell: bash
+      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+
+    - name: Setup SSH for submodules
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+    - name: Restore submodule mirror cache
+      uses: actions/cache@v4
+      with:
+        path: submodule-cache
+        key: submodule-mirrors-${{ runner.os }}-${{ runner.arch }}
+
+    - name: Init and update submodules
+      shell: bash
+      env:
+        GIT_SSH_COMMAND: "ssh -i $HOME/.ssh/id_rsa -o UserKnownHostsFile=$HOME/.ssh/known_hosts -o StrictHostKeyChecking=yes"
+        SUBMODULE_CACHE: submodule-cache
+      run: ./submodule-cache.sh update --init
+
+    - uses: haskell-actions/setup@v2
+      if: ${{ !matrix.docker }}
+      name: Setup Haskell tools
+      with:
+        ghc-version: '9.6.7'
+        cabal-version: 'latest'
+        cabal-update: true
+
+    - name: Build bindist
+      if: ${{ !matrix.docker }}
+      env:
+        CLEAN_AFTER_BUILD: '1'
+      run: ./plinth-build.sh
+
+    - name: Build bindist (Docker)
+      if: ${{ matrix.docker }}
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" \
+          -w /workspace \
+          -e RELEASE="${{ env.RELEASE }}" \
+          -e CLEAN_AFTER_BUILD=1 \
+          ${{ matrix.docker }} sh -c '
+            set -eux
+
+            # Install system dependencies (auto-detect distro)
+            if command -v apk >/dev/null 2>&1; then
+              apk update
+              apk add \
+                alpine-sdk autoconf automake bash build-base coreutils \
+                curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
+                ncurses-dev ncurses-libs ncurses-static \
+                perl python3 sudo wget xz zlib-dev zlib-static \
+                patchelf findutils llvm17 clang17
+            elif command -v dnf >/dev/null 2>&1; then
+              dnf install -y "dnf-command(config-manager)" || true
+              dnf config-manager --set-enabled powertools 2>/dev/null || true
+              dnf install -y epel-release 2>/dev/null || true
+              dnf install -y --allowerasing \
+                gcc gcc-c++ make autoconf automake \
+                python3 tar xz curl git perl which findutils diffutils \
+                gmp-devel ncurses-devel zlib-devel libffi-devel \
+                patchelf
+            fi
+
+            # Install GHCup + GHC + cabal
+            curl --proto "=https" --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
+              BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
+              BOOTSTRAP_HASKELL_GHC_VERSION=9.6.7 \
+              BOOTSTRAP_HASKELL_CABAL_VERSION=latest \
+              sh
+            . "$HOME/.ghcup/env"
+
+            git config --global --add safe.directory /workspace
+            ./plinth-build.sh
+          '
+
+    - name: Upload bindist
+      uses: ./.github/actions/upload
+      with:
+        name: bindist-dev-${{ matrix.name }}
+        path: _build/bindist/*.tar.xz
+
   test:
     name: Test / ${{ matrix.name }}
-    needs: build
+    needs: [build, build-dev]
     runs-on: ${{ matrix.os }}
     container: ${{ matrix.container }}
     strategy:
@@ -229,10 +379,9 @@ jobs:
           #   full_test: true
           - name: x86_64-linux / rocky-9
             os: ubuntu-latest
-            container: rockylinux:9
+            docker: rockylinux:9
             shell: bash
             bindist: x86_64-linux-glibc
-            pkg: dnf
             full_test: true
           - name: x86_64-linux / debian-11
             os: ubuntu-latest
@@ -318,6 +467,29 @@ jobs:
         shell: ${{ matrix.shell }}
 
     steps:
+    - name: Free disk space
+      if: runner.os == 'Linux' && !matrix.container
+      run: |
+        echo "=== Before cleanup ==="
+        df -h /
+        sudo rm -rf \
+          /usr/local/lib/android \
+          /usr/share/dotnet \
+          /usr/share/swift \
+          /usr/local/.ghcup \
+          /usr/local/share/boost \
+          /usr/local/share/powershell \
+          /usr/local/share/chromium \
+          /usr/local/lib/node_modules \
+          /opt/hostedtoolcache \
+          /opt/az \
+          /opt/microsoft \
+          /opt/pipx \
+          /imagegeneration
+        sudo docker image prune -af 2>/dev/null || true
+        echo "=== After cleanup ==="
+        df -h /
+
     - name: Install test dependencies (apt)
       if: matrix.pkg == 'apt'
       run: |
@@ -405,8 +577,9 @@ jobs:
         install: tar xz
 
     # Haskell tools needed for the full plinth test suite (cabal build/run)
+    # Docker entries install GHC+cabal via ghcup inside the container instead.
     - uses: haskell-actions/setup@v2
-      if: matrix.full_test
+      if: matrix.full_test && !matrix.docker
       name: Setup Haskell tools
       with:
         ghc-version: '9.6.7'
@@ -416,17 +589,17 @@ jobs:
     - name: Download bindist
       uses: ./.github/actions/download
       with:
-        name: bindist-${{ matrix.bindist }}
+        name: ${{ matrix.full_test && format('bindist-dev-{0}', matrix.bindist) || format('bindist-{0}', matrix.bindist) }}
         path: _build/bindist/
 
     - name: Verify bindist
       if: runner.os != 'Windows' && !matrix.docker
       run: ./verify-bindist-relocatable.sh
 
-    # For Docker-based test entries (Alpine on ARM), run verification
-    # inside Docker with the workspace mounted from the host.
+    # For Docker-based test entries without full_test, run basic
+    # verification inside Docker with the workspace mounted from the host.
     - name: Verify bindist (Docker)
-      if: ${{ matrix.docker }}
+      if: ${{ matrix.docker && !matrix.full_test }}
       run: |
         docker run --rm \
           -v "$GITHUB_WORKSPACE:/workspace" \
@@ -439,6 +612,40 @@ jobs:
               gcc g++ musl-dev make autoconf automake curl git \
               gmp-dev ncurses-dev zlib-dev libffi-dev \
               file binutils findutils patchelf bash coreutils xz
+
+            git config --global --add safe.directory /workspace
+            ./verify-bindist-relocatable.sh
+          '
+
+    # For Docker-based full_test entries, install GHC+cabal via ghcup
+    # inside the container so the plinth test suite can run.
+    # Using docker: instead of container: lets the free-disk-space step
+    # run on the host first.
+    - name: Verify bindist (Docker full_test)
+      if: ${{ matrix.docker && matrix.full_test }}
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" \
+          -w /workspace \
+          -e RUN_PLINTH_TEST=1 \
+          -e RUN_PLUGIN_TEST=1 \
+          ${{ matrix.docker }} bash -c '
+            set -eux
+
+            dnf install -y epel-release || true
+            dnf install -y --allowerasing \
+              gcc gcc-c++ make autoconf automake curl git \
+              gmp-devel ncurses-devel zlib-devel libffi-devel \
+              openssh-clients file binutils findutils patchelf xz
+            dnf clean all
+
+            # Install GHCup + GHC + cabal
+            curl --proto "=https" --tlsv1.2 -sSf https://get-ghcup.haskell.org | \
+              BOOTSTRAP_HASKELL_NONINTERACTIVE=1 \
+              BOOTSTRAP_HASKELL_GHC_VERSION=9.6.7 \
+              BOOTSTRAP_HASKELL_CABAL_VERSION=latest \
+              sh
+            . "$HOME/.ghcup/env"
 
             git config --global --add safe.directory /workspace
             ./verify-bindist-relocatable.sh

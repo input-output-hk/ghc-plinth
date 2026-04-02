@@ -394,8 +394,14 @@ main() {
     fi
 
     echo ""
-    echo "=== Cleaning prefix-A to free disk space ==="
+    echo "=== Cleaning prefix-A and cabal artifacts to free disk space ==="
     rm -rf "$PREFIX_A"
+    rm -rf "$REPO_ROOT/plinth/test/_build/store-reloctest-a"
+    rm -rf "$REPO_ROOT/plinth/test/_build/build-reloctest-a"
+    rm -rf "$REPO_ROOT/plinth/test/_build/logs-reloctest-a"
+    rm -rf "$REPO_ROOT/_build/store-plugin-a"
+    rm -rf "$REPO_ROOT/_build/build-plugin-a"
+    rm -rf "$REPO_ROOT/_build/logs-plugin-a"
 
     install_bindist "$PREFIX_B" "$tarball_copy"
     verify_installation "$PREFIX_B" "prefix-B"
