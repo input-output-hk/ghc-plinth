@@ -365,7 +365,9 @@ jobs:
     - name: Mark workspace as safe for git
       if: matrix.container
       shell: bash
-      run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
+      run: |
+        git config --global --add safe.directory "$GITHUB_WORKSPACE"
+        git config --global --add safe.directory '*'
 
     # Submodules are only needed for the plinth test suite (full_test)
     - name: Setup SSH for submodules
