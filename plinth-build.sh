@@ -269,11 +269,13 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
                 ( cd "$dir/wrappers" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
             fi
 
-            # remove the boot GHC from the bindist
+            # remove the boot GHC from the bindist (both binaries and wrappers)
             rm -f "$dir"/bin/ghc
             rm -f "$dir"/bin/ghc.exe
             rm -f "$dir"/bin/ghc-$VERSION
             rm -f "$dir"/bin/ghc-$VERSION.exe
+            rm -f "$dir"/wrappers/ghc
+            rm -f "$dir"/wrappers/ghc-$VERSION
             # rename runhaskell/runghc
             mv -f "$dir"/bin/runhaskell "$dir"/bin/uplc-runhaskell 2>/dev/null || true
             mv -f "$dir"/bin/runghc "$dir"/bin/uplc-runghc 2>/dev/null || true
