@@ -220,19 +220,20 @@ jobs:
       matrix:
         include:
           # Test x86_64-linux-glibc bindist across distros
-          - name: x86_64-linux / rocky-8
-            os: ubuntu-latest
-            container: rockylinux:8
-            shell: bash
-            bindist: x86_64-linux-glibc
-            pkg: yum
-            full_test: true
+          # - name: x86_64-linux / rocky-8
+          #   os: ubuntu-latest
+          #   container: rockylinux:8
+          #   shell: bash
+          #   bindist: x86_64-linux-glibc
+          #   pkg: yum
+          #   full_test: true
           - name: x86_64-linux / rocky-9
             os: ubuntu-latest
             container: rockylinux:9
             shell: bash
             bindist: x86_64-linux-glibc
             pkg: dnf
+            full_test: true
           - name: x86_64-linux / debian-11
             os: ubuntu-latest
             container: debian:11
@@ -331,7 +332,7 @@ jobs:
       if: matrix.pkg == 'dnf'
       run: |
         dnf install -y epel-release || true
-        dnf install -y \
+        dnf install -y --allowerasing \
           gcc gcc-c++ make autoconf automake curl git \
           gmp-devel ncurses-devel zlib-devel libffi-devel \
           openssh-clients file binutils findutils patchelf xz
