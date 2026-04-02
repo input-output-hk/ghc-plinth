@@ -26,7 +26,6 @@ SKIP_CLEAN_BUILD="${SKIP_CLEAN_BUILD:-1}"
 
 FAILURES=0
 TESTS_RUN=0
-EXTRACT_DIRS=()
 
 # --- Helpers ---
 
@@ -54,9 +53,6 @@ check() {
 cleanup() {
     if [ "$CLEANUP" -eq 1 ]; then
         rm -rf /tmp/plinth-reloctest-alpha /tmp/plinth-reloctest-beta
-        for d in "${EXTRACT_DIRS[@]}"; do
-            rm -rf "$d"
-        done
     fi
 }
 
@@ -88,7 +84,6 @@ install_bindist() {
     local tarball="$2"
     local extract_dir
     extract_dir="$(mktemp -d /tmp/plinth-reloctest-extract-XXXXXX)"
-    EXTRACT_DIRS+=("$extract_dir")
 
     echo ""
     echo "=== Installing to $prefix ==="
@@ -100,6 +95,9 @@ install_bindist() {
 
     echo "  Running make install ..."
     (cd "$extract_dir/$TARBALL_BASENAME" && make install)
+
+    echo "  Cleaning extract dir ..."
+    rm -rf "$extract_dir"
 
     echo "  Installation complete."
 }
@@ -230,6 +228,11 @@ verify_installation() {
         local dir_fields='(import-dirs|library-dirs|library-dirs-static|dynamic-library-dirs|include-dirs|data-dir|haddock-interfaces|haddock-html):'
         for conf in "$confdir"/*.conf; do
             [ -f "$conf" ] || continue
+            # system-cxx-std-lib legitimately points to system library dirs
+            # outside the GHC tree, so absolute paths are expected.
+            case "$(basename "$conf")" in
+                system-cxx-std-lib-*) continue ;;
+            esac
             # Extract lines that are dir field values: either "field: /path" or indented
             # continuation lines after a dir field. We use awk to capture values.
             local abs_paths
@@ -328,6 +331,11 @@ run_plugin_tests() {
     local cabal_args="--remote-repo-cache $REPO_ROOT/_build/packages --store-dir=$REPO_ROOT/_build/store-plugin-$suffix --logs-dir=$REPO_ROOT/_build/logs-plugin-$suffix"
     local cabal_build_args="-j -w $ghc --builddir=$REPO_ROOT/_build/build-plugin-$suffix"
 
+    if [ ! -f "$REPO_ROOT/plutus/cabal.project.plugin-test" ]; then
+        echo "  SKIP: cabal.project.plugin-test not found in plutus/"
+        return 0
+    fi
+
     (
         cd "$REPO_ROOT/plutus"
         echo "  Updating cabal index..."
@@ -357,12 +365,6 @@ main() {
     tarball_copy="$(mktemp /tmp/plinth-reloctest-tarball-XXXXXX.tar.xz)"
     cp "$TARBALL" "$tarball_copy"
 
-    # Install to both prefixes
-    install_bindist "$PREFIX_A" "$tarball_copy"
-    install_bindist "$PREFIX_B" "$tarball_copy"
-
-    rm -f "$tarball_copy"
-
     # Clean build directory to ensure no runtime dependency on it
     if [ "$SKIP_CLEAN_BUILD" -eq 0 ]; then
         echo ""
@@ -375,24 +377,40 @@ main() {
         echo "=== Skipping build directory cleanup (SKIP_CLEAN_BUILD=1) ==="
     fi
 
-    # Verify both installations
-    verify_installation "$PREFIX_A" "prefix-A"
-    verify_installation "$PREFIX_B" "prefix-B"
+    # Process each prefix sequentially to avoid having two full
+    # installations on disk at the same time.
 
-    # Run plinth test suite
+    install_bindist "$PREFIX_A" "$tarball_copy"
+    verify_installation "$PREFIX_A" "prefix-A"
+
     if [ "$RUN_PLINTH_TEST" -eq 1 ]; then
         run_plinth_test "$PREFIX_A" "prefix-A" "a"
-        run_plinth_test "$PREFIX_B" "prefix-B" "b"
-    else
-        echo ""
-        echo "=== Skipping plinth test suite (RUN_PLINTH_TEST=0) ==="
     fi
 
     # Run plutus-tx-plugin test suite (only on one prefix, not a
     # relocatability concern)
     if [ "$RUN_PLUGIN_TEST" -eq 1 ]; then
         run_plugin_tests "$PREFIX_A" "prefix-A" "a"
-    else
+    fi
+
+    echo ""
+    echo "=== Cleaning prefix-A to free disk space ==="
+    rm -rf "$PREFIX_A"
+
+    install_bindist "$PREFIX_B" "$tarball_copy"
+    verify_installation "$PREFIX_B" "prefix-B"
+
+    if [ "$RUN_PLINTH_TEST" -eq 1 ]; then
+        run_plinth_test "$PREFIX_B" "prefix-B" "b"
+    fi
+
+    rm -f "$tarball_copy"
+
+    if [ "$RUN_PLINTH_TEST" -eq 0 ]; then
+        echo ""
+        echo "=== Skipping plinth test suite (RUN_PLINTH_TEST=0) ==="
+    fi
+    if [ "$RUN_PLUGIN_TEST" -eq 0 ]; then
         echo ""
         echo "=== Skipping plutus-tx-plugin tests (RUN_PLUGIN_TEST=0) ==="
     fi
