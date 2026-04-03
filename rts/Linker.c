@@ -254,6 +254,19 @@ symbolTypeString (SymType type)
  Some test have been written for weak symbols but have been disabled
  mostly because it's unsure how the weak symbols support should look.
  See #11223
+
+ Note [Duplicate symbols in archive members]
+ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ Some C libraries define the same symbol in multiple object files
+ within a single archive. For example, the blst cryptographic library
+ defines __blst_platform_cap in both server.o and other object files
+ that are all bundled into the same .a archive.
+
+ The system linker handles this by picking the first definition and
+ ignoring subsequent ones from the same archive. The runtime linker
+ should do the same: when both the existing and new symbol come from
+ members of the same archive (same fileName, both have non-NULL
+ archiveMemberName), we keep the first definition.
  */
 int ghciInsertSymbolTable(
    pathchar* obj_name,
@@ -364,6 +377,18 @@ int ghciInsertSymbolTable(
         /* If the duplicate symbol is just in state OBJECT_LOADED it means we're in discovery of an
            member. It's not a real duplicate yet. If the Oc Becomes OBJECT_NEEDED then ocTryLoad will
            call this function again to trigger the duplicate error. */
+        return 1;
+    }
+    else if (owner
+          && pinfo->owner
+          && owner->archiveMemberName
+          && pinfo->owner->archiveMemberName
+          && pathcmp(owner->fileName, pinfo->owner->fileName) == 0)
+    {
+        /* See Note [Duplicate symbols in archive members] */
+        IF_DEBUG(linker,
+            debugBelch("ignoring duplicate symbol %s from same archive %" PATH_FMT "\n",
+                       key, owner->fileName));
         return 1;
     }
 
