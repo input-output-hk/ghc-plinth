@@ -9,7 +9,7 @@ case "$UNAME_S" in
     *)            IS_WINDOWS=0; EXE_EXT="" ;;
 esac
 
-RELEASE_HADRIAN_ARGS=""
+RELEASE_HADRIAN_ARGS="--docs=no-sphinx-pdfs"
 DEV_HADRIAN_ARGS="--docs=none"
 RELEASE_FLAVOUR="release"
 DEV_FLAVOUR="release+debug_info+debug_ghc+assertions"
