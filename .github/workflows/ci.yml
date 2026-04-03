@@ -385,10 +385,9 @@ jobs:
           # Test x86_64-linux-glibc bindist across distros
           - name: x86_64-linux / rocky-8
             os: ubuntu-latest
-            container: rockylinux:8
+            docker: rockylinux:8
             shell: bash
             bindist: x86_64-linux-glibc
-            pkg: yum
             full_test: true
           - name: x86_64-linux / rocky-9
             os: ubuntu-latest
@@ -619,11 +618,22 @@ jobs:
           -e RUN_PLINTH_TEST=0 \
           ${{ matrix.docker }} sh -c '
             set -eux
-            apk update
-            apk add \
-              gcc g++ musl-dev make autoconf automake curl git \
-              gmp-dev ncurses-dev zlib-dev libffi-dev \
-              file binutils findutils patchelf bash coreutils xz
+
+            # Install test dependencies (auto-detect distro)
+            if command -v apk >/dev/null 2>&1; then
+              apk update
+              apk add \
+                gcc g++ musl-dev make autoconf automake curl git \
+                gmp-dev ncurses-dev zlib-dev libffi-dev \
+                file binutils findutils patchelf bash coreutils xz
+            elif command -v dnf >/dev/null 2>&1; then
+              dnf install -y epel-release || true
+              dnf install -y --allowerasing \
+                gcc gcc-c++ make autoconf automake curl git \
+                gmp-devel ncurses-devel zlib-devel libffi-devel \
+                file binutils findutils patchelf xz
+              dnf clean all
+            fi
 
             git config --global --add safe.directory /workspace
             ./verify-bindist-relocatable.sh
