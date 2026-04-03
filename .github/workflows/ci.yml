@@ -139,7 +139,9 @@ jobs:
       if: runner.os == 'macOS'
       run: |
         brew install autoconf automake
-        pip3 install 'sphinx<8'
+        python3 -m venv "$RUNNER_TEMP/sphinx-venv"
+        "$RUNNER_TEMP/sphinx-venv/bin/pip" install 'sphinx<8'
+        echo "$RUNNER_TEMP/sphinx-venv/bin" >> "$GITHUB_PATH"
 
     - uses: haskell-actions/setup@v2
       if: ${{ !matrix.docker }}
@@ -190,7 +192,7 @@ jobs:
                 python3 python3-pip tar xz curl git perl which findutils diffutils \
                 gmp-devel ncurses-devel zlib-devel libffi-devel \
                 patchelf
-              pip3 install 'sphinx<8'
+              pip3 install "sphinx<8"
             fi
 
             # Install GHCup + GHC + cabal
