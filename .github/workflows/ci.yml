@@ -83,7 +83,8 @@ jobs:
         apt-get update
         apt-get install -y \
           gcc g++ make autoconf automake \
-          python3 python3-sphinx tar xz-utils curl git perl \
+          python3 python3-sphinx texlive-xetex texlive-latex-extra \
+          tar xz-utils curl git perl \
           libgmp-dev libncurses-dev zlib1g-dev libffi-dev \
           openssh-client patchelf
 
@@ -132,12 +133,14 @@ jobs:
         install: >-
           autoconf automake make tar xz patch curl
           mingw-w64-x86_64-python mingw-w64-x86_64-python-sphinx
+          mingw-w64-x86_64-texlive-bin
 
     - name: Install autotools (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install autoconf automake sphinx-doc
+        brew install autoconf automake sphinx-doc basictex
         echo "$(brew --prefix sphinx-doc)/bin" >> "$GITHUB_PATH"
+        eval "$(/usr/libexec/path_helper)"
 
     - uses: haskell-actions/setup@v2
       if: ${{ !matrix.docker }}
@@ -175,7 +178,8 @@ jobs:
                 alpine-sdk autoconf automake bash build-base coreutils \
                 curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
                 ncurses-dev ncurses-libs ncurses-static \
-                perl python3 py3-sphinx sudo wget xz zlib-dev zlib-static \
+                perl python3 py3-sphinx texlive-xetex texmf-dist-latexextra \
+                sudo wget xz zlib-dev zlib-static \
                 patchelf findutils llvm17 clang17
             elif command -v dnf >/dev/null 2>&1; then
               dnf install -y "dnf-command(config-manager)" || true
@@ -185,7 +189,7 @@ jobs:
                 gcc gcc-c++ make autoconf automake \
                 python3 python3-pip tar xz curl git perl which findutils diffutils \
                 gmp-devel ncurses-devel zlib-devel libffi-devel \
-                patchelf
+                patchelf texlive-xetex texlive-latex
               pip3 install sphinx
             fi
 
