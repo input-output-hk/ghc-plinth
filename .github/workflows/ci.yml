@@ -136,8 +136,8 @@ jobs:
     - name: Install autotools (macOS)
       if: runner.os == 'macOS'
       run: |
-        brew install autoconf automake
-        pip3 install sphinx
+        brew install autoconf automake sphinx-doc
+        echo "$(brew --prefix sphinx-doc)/bin" >> "$GITHUB_PATH"
 
     - uses: haskell-actions/setup@v2
       if: ${{ !matrix.docker }}
