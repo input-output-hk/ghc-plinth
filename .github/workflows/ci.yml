@@ -83,7 +83,7 @@ jobs:
         apt-get update
         apt-get install -y \
           gcc g++ make autoconf automake \
-          python3 tar xz-utils curl git perl \
+          python3 python3-sphinx tar xz-utils curl git perl \
           libgmp-dev libncurses-dev zlib1g-dev libffi-dev \
           openssh-client patchelf
 
@@ -131,11 +131,13 @@ jobs:
         update: false
         install: >-
           autoconf automake make tar xz patch curl
-          mingw-w64-x86_64-python
+          mingw-w64-x86_64-python mingw-w64-x86_64-python-sphinx
 
     - name: Install autotools (macOS)
       if: runner.os == 'macOS'
-      run: brew install autoconf automake
+      run: |
+        brew install autoconf automake
+        pip3 install sphinx
 
     - uses: haskell-actions/setup@v2
       if: ${{ !matrix.docker }}
@@ -173,7 +175,7 @@ jobs:
                 alpine-sdk autoconf automake bash build-base coreutils \
                 curl gcc g++ git gmp gmp-dev grep linux-headers gzip \
                 ncurses-dev ncurses-libs ncurses-static \
-                perl python3 sudo wget xz zlib-dev zlib-static \
+                perl python3 py3-sphinx sudo wget xz zlib-dev zlib-static \
                 patchelf findutils llvm17 clang17
             elif command -v dnf >/dev/null 2>&1; then
               dnf install -y "dnf-command(config-manager)" || true
@@ -181,9 +183,10 @@ jobs:
               dnf install -y epel-release 2>/dev/null || true
               dnf install -y --allowerasing \
                 gcc gcc-c++ make autoconf automake \
-                python3 tar xz curl git perl which findutils diffutils \
+                python3 python3-pip tar xz curl git perl which findutils diffutils \
                 gmp-devel ncurses-devel zlib-devel libffi-devel \
                 patchelf
+              pip3 install sphinx
             fi
 
             # Install GHCup + GHC + cabal
@@ -370,19 +373,18 @@ jobs:
       matrix:
         include:
           # Test x86_64-linux-glibc bindist across distros
-          # - name: x86_64-linux / rocky-8
-          #   os: ubuntu-latest
-          #   container: rockylinux:8
-          #   shell: bash
-          #   bindist: x86_64-linux-glibc
-          #   pkg: yum
-          #   full_test: true
+          - name: x86_64-linux / rocky-8
+            os: ubuntu-latest
+            container: rockylinux:8
+            shell: bash
+            bindist: x86_64-linux-glibc
+            pkg: yum
+            full_test: true
           - name: x86_64-linux / rocky-9
             os: ubuntu-latest
             docker: rockylinux:9
             shell: bash
             bindist: x86_64-linux-glibc
-            full_test: true
           - name: x86_64-linux / debian-11
             os: ubuntu-latest
             container: debian:11
