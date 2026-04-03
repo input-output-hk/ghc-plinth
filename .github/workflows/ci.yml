@@ -49,6 +49,8 @@ jobs:
             shell: msys2 {0}
     env:
       RELEASE: '1'
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -165,6 +167,8 @@ jobs:
           -w /workspace \
           -e RELEASE="${{ env.RELEASE }}" \
           -e CLEAN_AFTER_BUILD=1 \
+          -e LANG=C.UTF-8 \
+          -e LC_ALL=C.UTF-8 \
           ${{ matrix.docker }} sh -c '
             set -eux
 
@@ -232,6 +236,8 @@ jobs:
             shell: bash
     env:
       RELEASE: '0'
+      LANG: C.UTF-8
+      LC_ALL: C.UTF-8
     defaults:
       run:
         shell: ${{ matrix.shell }}
@@ -322,6 +328,8 @@ jobs:
           -w /workspace \
           -e RELEASE="${{ env.RELEASE }}" \
           -e CLEAN_AFTER_BUILD=1 \
+          -e LANG=C.UTF-8 \
+          -e LC_ALL=C.UTF-8 \
           ${{ matrix.docker }} sh -c '
             set -eux
 
