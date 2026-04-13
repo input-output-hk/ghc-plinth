@@ -55,7 +55,7 @@ import GHC.Types.Name.Reader   ( RdrName, ImportSpec(..), ImpDeclSpec(..)
 
 import GHC.Unit.Finder         ( findPluginModule, FindResult(..) )
 import GHC.Driver.Config.Finder ( initFinderOpts )
-import GHC.Unit.Module   ( Module, ModuleName )
+import GHC.Unit.Module   ( Module, ModuleName, moduleNameString )
 import GHC.Unit.Module.ModIface
 import GHC.Unit.Env
 
@@ -65,12 +65,12 @@ import GHC.Utils.Error
 import GHC.Utils.Outputable
 import GHC.Utils.Exception
 
-import Control.Monad     ( unless )
+import Control.Monad     ( unless, when )
 import Data.Maybe        ( mapMaybe )
 import Unsafe.Coerce     ( unsafeCoerce )
 import GHC.Linker.Types
 import GHC.Types.Unique.DFM
-import Data.List (unzip4)
+import Data.List (partition, unzip4)
 import GHC.Driver.Monad
 
 -- | Initialise plugins specified by the current DynFlags and update the session.
@@ -82,7 +82,17 @@ initializeSessionPlugins = getSession >>= liftIO . initializePlugins >>= setSess
 -- actual compilation starts. Idempotent operation. Should be re-called if
 -- pluginModNames or pluginModNameOpts changes.
 initializePlugins :: HscEnv -> IO HscEnv
-initializePlugins hsc_env
+initializePlugins hsc_env = do
+  {- XXX cleanup
+    -- See Note [Ignoring PlutusTx.Plugin]
+    let (ignored, requested) = partition isIgnoredPlugin (pluginModNames dflags)
+    when (not (null ignored)) $
+      logInfo (hsc_logger hsc_env) $
+        withPprStyle defaultUserStyle $
+          text "WARNING:" <+>
+          text "ignoring" <+> ppr ignored <+>
+          text "(not supported)"
+
     -- check that plugin specifications didn't change
 
     -- static plugins: see Note [Per-module options for static plugins]
@@ -99,7 +109,7 @@ initializePlugins hsc_env
 
   = return hsc_env -- no change, no need to reload plugins
 
-  | otherwise
+  | otherwise -}
   = do (loaded_plugins, links, pkgs) <- loadPlugins hsc_env
        external_plugins <- loadExternalPlugins (externalPluginSpecs dflags)
        let plugins' = (hsc_plugins hsc_env) { staticPlugins    = map refreshStaticArgs (staticPlugins (hsc_plugins hsc_env))
@@ -109,6 +119,30 @@ initializePlugins hsc_env
                                             }
        let hsc_env' = hsc_env { hsc_plugins = plugins' }
        withPlugins (hsc_plugins hsc_env') driverPlugin hsc_env'
+    let no_change
+            -- dynamic plugins
+          | loaded_plugins <- loadedPlugins (hsc_plugins hsc_env)
+          , map lpModuleName loaded_plugins == reverse requested
+          , all same_args loaded_plugins
+            -- external plugins
+          , external_plugins <- externalPlugins (hsc_plugins hsc_env)
+          , check_external_plugins external_plugins (externalPluginSpecs dflags)
+            -- FIXME: we should check static plugins too
+          = True
+          | otherwise
+          = False
+    if no_change
+      then return hsc_env -- no change, no need to reload plugins
+      else do
+        (loaded_plugins, links, pkgs) <- loadPlugins hsc_env
+        external_plugins <- loadExternalPlugins (externalPluginSpecs dflags)
+        let plugins' = (hsc_plugins hsc_env) { staticPlugins    = staticPlugins (hsc_plugins hsc_env)
+                                              , externalPlugins  = external_plugins
+                                              , loadedPlugins    = loaded_plugins
+                                              , loadedPluginDeps = (links, pkgs)
+                                              }
+        let hsc_env' = hsc_env { hsc_plugins = plugins' }
+        withPlugins (hsc_plugins hsc_env') driverPlugin hsc_env'
   where
     dflags = hsc_dflags hsc_env
     -- dynamic plugins
@@ -134,13 +168,26 @@ initializePlugins hsc_env
       ([]  , _ )  -> False -- some external plugin added
       (p:ps,s:ss) -> check_external_plugin p s && check_external_plugins ps ss
 
+-- Note [Ignoring PlutusTx.Plugin]
+-- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-- The PlutusTx.Plugin GHC plugin compiles Haskell to Plutus Core. In
+-- the Plinth compiler (uplc-ghc), this compilation is done by GHC
+-- itself and the plugin is not needed. Since the Plinth compiler uses
+-- an external interpreter, plugin loading would fail with
+-- "Plugins require -fno-external-interpreter".
+--
+-- Rather than requiring all source files to be patched to remove
+-- {-# OPTIONS_GHC -fplugin PlutusTx.Plugin #-} pragmas, we silently
+-- skip loading this specific plugin and issue a warning.
+
 loadPlugins :: HscEnv -> IO ([LoadedPlugin], [Linkable], PkgsLoaded)
 loadPlugins hsc_env
-  = do { unless (null to_load) $
+  = do { let active = filterIgnoredPlugins to_load
+       ; unless (null active) $
            checkExternalInterpreter hsc_env
-       ; plugins_with_deps <- mapM loadPlugin to_load
+       ; plugins_with_deps <- mapM loadPlugin active
        ; let (plugins, ifaces, links, pkgs) = unzip4 plugins_with_deps
-       ; return (zipWith attachOptions to_load (zip plugins ifaces), concat links, foldl' plusUDFM emptyUDFM pkgs)
+       ; return (zipWith attachOptions active (zip plugins ifaces), concat links, foldl' plusUDFM emptyUDFM pkgs)
        }
   where
     dflags  = hsc_dflags hsc_env
@@ -202,6 +249,13 @@ dynPluginModNamesToLoad hsc_env =
     static_names = mapMaybe spModuleName (staticPlugins (hsc_plugins hsc_env))
     claimedByStatic nm = nm `elem` static_names
 
+
+-- See Note [Ignoring PlutusTx.Plugin]
+isIgnoredPlugin :: ModuleName -> Bool
+isIgnoredPlugin mn = moduleNameString mn == "PlutusTx.Plugin"
+
+filterIgnoredPlugins :: [ModuleName] -> [ModuleName]
+filterIgnoredPlugins = filter (not . isIgnoredPlugin)
 
 loadFrontendPlugin :: HscEnv -> ModuleName -> IO (FrontendPlugin, [Linkable], PkgsLoaded)
 loadFrontendPlugin hsc_env mod_name = do
