@@ -26,6 +26,7 @@ SKIP_CLEAN_BUILD="${SKIP_CLEAN_BUILD:-1}"
 
 FAILURES=0
 TESTS_RUN=0
+FAILED_NAMES=""
 
 # --- Helpers ---
 
@@ -37,6 +38,7 @@ pass() {
 fail() {
     TESTS_RUN=$((TESTS_RUN + 1))
     FAILURES=$((FAILURES + 1))
+    FAILED_NAMES="${FAILED_NAMES:+$FAILED_NAMES, }$1"
     echo "  FAIL: $1"
 }
 
@@ -341,23 +343,21 @@ run_plugin_tests() {
         return 0
     fi
 
-    local logs_dir="$REPO_ROOT/_build/logs-plugin-$suffix"
+    local build_dir="$REPO_ROOT/_build/build-plugin-$suffix"
     if (
         cd "$REPO_ROOT/plutus"
         echo "  Updating cabal index..."
         cabal $cabal_project_args $cabal_args update
+        echo "  Building plutus-tx-plugin-tests..."
+        cabal $cabal_project_args $cabal_args build $cabal_build_args plutus-tx-plugin-tests
         echo "  Running plutus-tx-plugin-tests..."
         cabal $cabal_project_args $cabal_args test $cabal_build_args plutus-tx-plugin-tests
     ); then
         pass "plutus-tx-plugin tests pass with $label"
     else
         fail "plutus-tx-plugin tests failed with $label"
-        echo "  Build logs:"
-        for log in "$logs_dir"/*.log; do
-            [ -f "$log" ] || continue
-            echo "  --- $(basename "$log") ---"
-            tail -50 "$log"
-        done
+        echo "  Last 100 lines of cabal build log:"
+        find "$build_dir" -name '*.log' -newer "$build_dir" -exec tail -100 {} + 2>/dev/null || true
     fi
 }
 
@@ -437,7 +437,7 @@ main() {
     echo " Results: $TESTS_RUN tests, $FAILURES failures"
     echo "============================================"
     if [ "$FAILURES" -gt 0 ]; then
-        echo " FAILED"
+        echo " FAILED: $FAILED_NAMES"
         exit 1
     else
         echo " PASSED - bindist is relocatable"
