@@ -300,7 +300,7 @@ run_plinth_test() {
     local cabal_args="--remote-repo-cache _build/packages --store-dir=_build/store-reloctest-$suffix --logs-dir=_build/logs-reloctest-$suffix"
     local cabal_build_args="-j -w $ghc --builddir=_build/build-reloctest-$suffix"
 
-    (
+    if (
         cd "$REPO_ROOT/plinth/test"
         echo "  Updating cabal index..."
         cabal $cabal_project_args $cabal_args update
@@ -308,9 +308,7 @@ run_plinth_test() {
         cabal $cabal_project_args $cabal_args build $cabal_build_args .
         echo "  Running gen-examples..."
         cabal $cabal_project_args $cabal_args run $cabal_build_args gen-examples
-    )
-
-    if [ $? -eq 0 ]; then
+    ); then
         pass "plinth test suite passes with $label"
     else
         fail "plinth test suite failed with $label"
@@ -336,15 +334,13 @@ run_plugin_tests() {
         return 0
     fi
 
-    (
+    if (
         cd "$REPO_ROOT/plutus"
         echo "  Updating cabal index..."
         cabal $cabal_project_args $cabal_args update
         echo "  Running plutus-tx-plugin-tests..."
         cabal $cabal_project_args $cabal_args test $cabal_build_args plutus-tx-plugin-tests
-    )
-
-    if [ $? -eq 0 ]; then
+    ); then
         pass "plutus-tx-plugin tests pass with $label"
     else
         fail "plutus-tx-plugin tests failed with $label"
