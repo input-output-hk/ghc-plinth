@@ -65,7 +65,7 @@ import GHC.Utils.Error
 import GHC.Utils.Outputable
 import GHC.Utils.Exception
 
-import Control.Monad     ( unless, when )
+import Control.Monad     ( unless )
 import Data.Maybe        ( mapMaybe )
 import Unsafe.Coerce     ( unsafeCoerce )
 import GHC.Linker.Types
@@ -85,13 +85,7 @@ initializePlugins :: HscEnv -> IO HscEnv
 initializePlugins hsc_env = do
   {- XXX cleanup
     -- See Note [Ignoring PlutusTx.Plugin]
-    let (ignored, requested) = partition isIgnoredPlugin (pluginModNames dflags)
-    when (not (null ignored)) $
-      logInfo (hsc_logger hsc_env) $
-        withPprStyle defaultUserStyle $
-          text "WARNING:" <+>
-          text "ignoring" <+> ppr ignored <+>
-          text "(not supported)"
+    let (_ignored, requested) = partition isIgnoredPlugin (pluginModNames dflags)
 
     -- check that plugin specifications didn't change
 
@@ -131,12 +125,19 @@ initializePlugins hsc_env = do
           = True
           | otherwise
           = False
+
+    -- See Note [Ignoring PlutusTx.Plugin]
+    -- Forward per-module -fplugin-opt options to static plugins.
+    let updated_statics = updateStaticPluginArgs dflags
+                            (staticPlugins (hsc_plugins hsc_env))
+
     if no_change
-      then return hsc_env -- no change, no need to reload plugins
+      then return hsc_env { hsc_plugins = (hsc_plugins hsc_env)
+                              { staticPlugins = updated_statics } }
       else do
         (loaded_plugins, links, pkgs) <- loadPlugins hsc_env
         external_plugins <- loadExternalPlugins (externalPluginSpecs dflags)
-        let plugins' = (hsc_plugins hsc_env) { staticPlugins    = staticPlugins (hsc_plugins hsc_env)
+        let plugins' = (hsc_plugins hsc_env) { staticPlugins    = updated_statics
                                               , externalPlugins  = external_plugins
                                               , loadedPlugins    = loaded_plugins
                                               , loadedPluginDeps = (links, pkgs)
@@ -171,14 +172,16 @@ initializePlugins hsc_env = do
 -- Note [Ignoring PlutusTx.Plugin]
 -- ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 -- The PlutusTx.Plugin GHC plugin compiles Haskell to Plutus Core. In
--- the Plinth compiler (uplc-ghc), this compilation is done by GHC
--- itself and the plugin is not needed. Since the Plinth compiler uses
--- an external interpreter, plugin loading would fail with
--- "Plugins require -fno-external-interpreter".
+-- the Plinth compiler (uplc-ghc), this compilation is done by a
+-- static plugin registered at startup (see ghc/Main.hs). Dynamic
+-- loading of PlutusTx.Plugin via -fplugin is therefore not needed and
+-- would fail with "Plugins require -fno-external-interpreter" since
+-- the Plinth compiler uses an external interpreter.
 --
 -- Rather than requiring all source files to be patched to remove
--- {-# OPTIONS_GHC -fplugin PlutusTx.Plugin #-} pragmas, we silently
--- skip loading this specific plugin and issue a warning.
+-- {-# OPTIONS_GHC -fplugin PlutusTx.Plugin #-} pragmas, we skip
+-- loading this plugin dynamically. Per-module -fplugin-opt options
+-- are forwarded to the static plugin by updateStaticPluginArgs.
 
 loadPlugins :: HscEnv -> IO ([LoadedPlugin], [Linkable], PkgsLoaded)
 loadPlugins hsc_env
@@ -256,6 +259,21 @@ isIgnoredPlugin mn = moduleNameString mn == "PlutusTx.Plugin"
 
 filterIgnoredPlugins :: [ModuleName] -> [ModuleName]
 filterIgnoredPlugins = filter (not . isIgnoredPlugin)
+
+-- | Update static plugin arguments from per-module -fplugin-opt
+-- options. See Note [Ignoring PlutusTx.Plugin].
+--
+-- Static plugins are registered at startup with the command-line
+-- options available at that point. Per-module OPTIONS_GHC pragmas
+-- (e.g. -fplugin-opt PlutusTx.Plugin:defer-errors) are added to
+-- pluginModNameOpts later and need to be forwarded.
+updateStaticPluginArgs :: DynFlags -> [StaticPlugin] -> [StaticPlugin]
+updateStaticPluginArgs dflags = map updateOne
+  where
+    ignored_opts = [ opt | (mod_nm, opt) <- pluginModNameOpts dflags
+                         , isIgnoredPlugin mod_nm ]
+    updateOne (StaticPlugin (PluginWithArgs p _old_args)) =
+      StaticPlugin (PluginWithArgs p ignored_opts)
 
 loadFrontendPlugin :: HscEnv -> ModuleName -> IO (FrontendPlugin, [Linkable], PkgsLoaded)
 loadFrontendPlugin hsc_env mod_name = do
