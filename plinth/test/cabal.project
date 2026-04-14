@@ -22,6 +22,7 @@ packages:
 optional-packages:
   ../../plutus/plutus-tx
   ../../plutus/plutus-core
+  ../../plutus/plutus-ledger-api
   ../../plutus/plutus-metatheory
 
 source-repository-package

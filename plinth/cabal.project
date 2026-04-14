@@ -50,6 +50,7 @@ optional-packages:
   ../plutus/plutus-tx-plugin
   ../plutus/plutus-tx
   ../plutus/plutus-core
+  ../plutus/plutus-ledger-api
   ../plutus/plutus-metatheory
 
 package secp256k1-clib
