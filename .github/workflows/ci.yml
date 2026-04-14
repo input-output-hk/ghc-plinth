@@ -605,6 +605,9 @@ jobs:
 
     - name: Verify bindist
       if: runner.os != 'Windows' && !matrix.docker
+      env:
+        LANG: C.UTF-8
+        LC_ALL: C.UTF-8
       run: ./verify-bindist-relocatable.sh
 
     # For Docker-based test entries without full_test, run basic
@@ -616,6 +619,8 @@ jobs:
           -v "$GITHUB_WORKSPACE:/workspace" \
           -w /workspace \
           -e RUN_PLINTH_TEST=0 \
+          -e LANG=C.UTF-8 \
+          -e LC_ALL=C.UTF-8 \
           ${{ matrix.docker }} sh -c '
             set -eux
 
@@ -651,6 +656,8 @@ jobs:
           -w /workspace \
           -e RUN_PLINTH_TEST=1 \
           -e RUN_PLUGIN_TEST=1 \
+          -e LANG=C.UTF-8 \
+          -e LC_ALL=C.UTF-8 \
           ${{ matrix.docker }} bash -c '
             set -eux
 
