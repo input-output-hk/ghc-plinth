@@ -49,9 +49,9 @@ common plinth-options
 
 common plutus-deps
   build-depends:
-    , plutus-core ^>=1.57.0.0
-    , plutus-ledger-api ^>=1.57.0.0
-    , plutus-tx ^>=1.57.0.0
+    , plutus-core
+    , plutus-ledger-api
+    , plutus-tx
     , plutus-tx-plugin
     -- plutus-tx-plugin should be removed later. for now we still depend on some symbols
     -- , plutus-tx-plugin-stub
