@@ -278,10 +278,17 @@ filterIgnoredPlugins plugins = filter (not . isIgnoredPlugin) plugins
 updateStaticPluginArgs :: DynFlags -> [StaticPlugin] -> [StaticPlugin]
 updateStaticPluginArgs dflags = map updateOne
   where
-    ignored_opts = [ opt | (mod_nm, opt) <- pluginModNameOpts dflags
-                         , isIgnoredPlugin mod_nm ]
-    updateOne (StaticPlugin (PluginWithArgs p _old_args)) =
-      StaticPlugin (PluginWithArgs p ignored_opts)
+    all_ignored_opts = [ (mod_nm, opt)
+                       | (mod_nm, opt) <- pluginModNameOpts dflags
+                       , isIgnoredPlugin mod_nm ]
+    updateOne sp =
+      let PluginWithArgs p _old_args = spPlugin sp
+          args = case spModuleName sp of
+            Just my_name ->
+              [ opt | (mod_nm, opt) <- all_ignored_opts, mod_nm == my_name ]
+            Nothing ->
+              map snd all_ignored_opts
+      in sp { spPlugin = PluginWithArgs p args }
 
 loadFrontendPlugin :: HscEnv -> ModuleName -> IO (FrontendPlugin, [Linkable], PkgsLoaded)
 loadFrontendPlugin hsc_env mod_name = do
