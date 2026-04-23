@@ -272,18 +272,25 @@ main' postLoadMode units dflags0 args flagWarnings = do
   liftIO $ initUniqSupply (initialUnique dflags6) (uniqueIncrement dflags6)
 
 #if defined(PLINTH)
+  -- Register both @PlutusTx.Plugin@ and @Plinth.Plugin@ as static plugins.
+  -- The former rewrites @'plc@ markers, the latter rewrites @'plinthc@
+  -- markers. Both accept the same @-fplugin-opt@ option schema, so each
+  -- plugin receives every option keyed by either name and ignores the
+  -- ones that aren't relevant to its markers. Initial args here reflect
+  -- the command-line flags seen at startup; per-module pragmas are
+  -- forwarded later by 'updateStaticPluginArgs'.
   let plutustx_plugin_mod_name = mkModuleName "PlutusTx.Plugin"
       plinth_plugin_mod_name   = mkModuleName "Plinth.Plugin"
-      optsFor nm = [ opt | (mod_name, opt) <- pluginModNameOpts dflags6
-                         , mod_name == nm ]
-      mkStatic mod_name plug =
-        StaticPlugin
-          { spPlugin     = PluginWithArgs plug (optsFor mod_name)
-          , spModuleName = Just mod_name
-          }
+      plinth_initial_args =
+        [ opt | (mod_name, opt) <- pluginModNameOpts dflags6
+              , mod_name == plutustx_plugin_mod_name
+             || mod_name == plinth_plugin_mod_name
+        ]
+      mkStatic plug =
+        StaticPlugin (PluginWithArgs plug plinth_initial_args)
       static_plugins =
-        [ mkStatic plutustx_plugin_mod_name PlutusTx.Plugin.plugin
-        , mkStatic plinth_plugin_mod_name   Plinth.Plugin.plugin
+        [ mkStatic PlutusTx.Plugin.plugin
+        , mkStatic Plinth.Plugin.plugin
         ]
 
   modifySession $ \hsc_env ->

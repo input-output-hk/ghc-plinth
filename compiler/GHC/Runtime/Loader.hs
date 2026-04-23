@@ -275,20 +275,23 @@ filterIgnoredPlugins plugins = filter (not . isIgnoredPlugin) plugins
 -- options available at that point. Per-module OPTIONS_GHC pragmas
 -- (e.g. -fplugin-opt PlutusTx.Plugin:defer-errors) are added to
 -- pluginModNameOpts later and need to be forwarded.
+--
+-- Each registered static plugin gets every option keyed by an ignored
+-- plugin module name. That's broader than strictly needed — a plugin
+-- targeted by @-fplugin-opt PlutusTx.Plugin:foo@ also sees opts meant
+-- for @Plinth.Plugin@ — but @PlutusTx.Plugin.plugin@ and
+-- @Plinth.Plugin.plugin@ both delegate to @parsePluginOptions@ from
+-- @PlutusTx.Options@, which accepts the same option schema, so the
+-- extra options are harmless. Refining this would require tagging each
+-- 'StaticPlugin' with the module name it represents, which would be a
+-- @ghc@ library ABI change.
 updateStaticPluginArgs :: DynFlags -> [StaticPlugin] -> [StaticPlugin]
 updateStaticPluginArgs dflags = map updateOne
   where
-    all_ignored_opts = [ (mod_nm, opt)
-                       | (mod_nm, opt) <- pluginModNameOpts dflags
-                       , isIgnoredPlugin mod_nm ]
-    updateOne sp =
-      let PluginWithArgs p _old_args = spPlugin sp
-          args = case spModuleName sp of
-            Just my_name ->
-              [ opt | (mod_nm, opt) <- all_ignored_opts, mod_nm == my_name ]
-            Nothing ->
-              map snd all_ignored_opts
-      in sp { spPlugin = PluginWithArgs p args }
+    ignored_opts = [ opt | (mod_nm, opt) <- pluginModNameOpts dflags
+                         , isIgnoredPlugin mod_nm ]
+    updateOne (StaticPlugin (PluginWithArgs p _old_args)) =
+      StaticPlugin (PluginWithArgs p ignored_opts)
 
 loadFrontendPlugin :: HscEnv -> ModuleName -> IO (FrontendPlugin, [Linkable], PkgsLoaded)
 loadFrontendPlugin hsc_env mod_name = do

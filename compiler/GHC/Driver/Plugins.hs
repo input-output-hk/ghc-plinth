@@ -231,17 +231,6 @@ data ExternalPlugin = ExternalPlugin
 data StaticPlugin = StaticPlugin
   { spPlugin     :: PluginWithArgs
   -- ^ the actual plugin together with its commandline arguments
-  , spModuleName :: Maybe ModuleName
-  -- ^ The module name the plugin claims (if any). When set, a -fplugin
-  -- flag naming this module is ignored instead of triggering a dynamic
-  -- load: the static plugin already provides it. See Note [Static
-  -- plugins shadow -fplugin] in "GHC.Runtime.Loader".
-  -- The module name that the user would have written after @-fplugin@ to
-  -- load this plugin dynamically. When set, per-module @-fplugin-opt@
-  -- options keyed by this name are forwarded to the plugin's arguments by
-  -- 'GHC.Runtime.Loader.updateStaticPluginArgs'. @Nothing@ preserves the
-  -- historical behaviour (forward all ignored options to every plugin).
-  -- XXX duplicate comment
   }
 
 lpModuleName :: LoadedPlugin -> ModuleName
