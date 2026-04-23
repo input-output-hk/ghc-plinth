@@ -27,13 +27,13 @@ source-repository-package
     type: git
     location: https://github.com/hsyl20/cardano-base
     subdir: cardano-crypto-class
-    tag: 0dd23c9e4f281a36018b3109786837d02645112a
+    tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
 
 source-repository-package
     type: git
     location: https://github.com/hsyl20/cardano-base
     subdir: cardano-crypto-praos
-    tag: 0dd23c9e4f281a36018b3109786837d02645112a
+    tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
 
 source-repository-package
     type: git
@@ -53,6 +53,12 @@ source-repository-package
 
 package secp256k1-clib
   flags: +schnorrsig +recovery +ecdh +extrakeys
+
+package cardano-crypto-class
+  flags: +use-haskell-clibs
+
+package cardano-crypto-praos
+  flags: +use-haskell-clibs
 
 package sodium-clib
   -- we need to disable -fPIE in libsodium, otherwise the Haskell code tries to
