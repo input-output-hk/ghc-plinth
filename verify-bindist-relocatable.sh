@@ -16,8 +16,10 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$SCRIPT_DIR"
 
-PREFIX_A="${PREFIX_A:-/tmp/plinth-reloctest-alpha/usr/local}"
-PREFIX_B="${PREFIX_B:-/tmp/plinth-reloctest-beta/opt/plinth}"
+RELOCTEST_DIR="${RELOCTEST_DIR:-$REPO_ROOT/_build/reloctest}"
+
+PREFIX_A="${PREFIX_A:-$RELOCTEST_DIR/alpha/usr/local}"
+PREFIX_B="${PREFIX_B:-$RELOCTEST_DIR/beta/opt/plinth}"
 RUN_PLINTH_TEST="${RUN_PLINTH_TEST:-1}"
 RUN_PLUGIN_TEST="${RUN_PLUGIN_TEST:-0}"
 CLEANUP="${CLEANUP:-1}"
@@ -54,7 +56,9 @@ check() {
 
 cleanup() {
     if [ "$CLEANUP" -eq 1 ]; then
-        rm -rf /tmp/plinth-reloctest-alpha /tmp/plinth-reloctest-beta
+        rm -rf "$RELOCTEST_DIR/alpha" "$RELOCTEST_DIR/beta" \
+               "$RELOCTEST_DIR"/extract-* "$RELOCTEST_DIR"/tarball-*.tar.xz \
+               "$RELOCTEST_DIR"/strip-*
     fi
 }
 
@@ -85,7 +89,8 @@ install_bindist() {
     local prefix="$1"
     local tarball="$2"
     local extract_dir
-    extract_dir="$(mktemp -d /tmp/plinth-reloctest-extract-XXXXXX)"
+    mkdir -p "$RELOCTEST_DIR"
+    extract_dir="$(mktemp -d "$RELOCTEST_DIR/extract-XXXXXX")"
 
     echo ""
     echo "=== Installing to $prefix ==="
@@ -163,14 +168,30 @@ verify_installation() {
     fi
 
     # 5. No build paths leaked (text and binary files)
+    #
+    # A "leak" is a reference to the repo tree that is NOT inside the
+    # install prefix. Paths inside $prefix are expected (RPATHs, wrapper
+    # scripts), so we match $build_dir then subtract $prefix. This matters
+    # when $prefix sits under $REPO_ROOT (e.g. _build/reloctest/...).
     local build_dir="$REPO_ROOT"
     local leaked=0
+
+    # Return matches of $build_dir that are not inside $prefix.
+    # Usage: real_leaks <file>  (stdin is read from stdin if file is "-")
+    real_leaks() {
+        local f="$1"
+        if [ "$f" = "-" ]; then
+            grep "$build_dir" | grep -v "^[^:]*:.*$prefix" | grep -v "^$prefix"
+        else
+            grep "$build_dir" "$f" 2>/dev/null | grep -v "$prefix"
+        fi
+    }
 
     # Check wrapper scripts in bin/
     for f in "$prefix/bin"/*; do
         [ -f "$f" ] || continue
         file "$f" | grep -q text || continue
-        if grep -q "$build_dir" "$f" 2>/dev/null; then
+        if [ -n "$(real_leaks "$f")" ]; then
             fail "build path leaked in wrapper $(basename "$f")"
             leaked=1
         fi
@@ -179,7 +200,7 @@ verify_installation() {
     # Check settings file
     local settings_file="$ghclibdir/lib/settings"
     if [ -f "$settings_file" ]; then
-        if grep -q "$build_dir" "$settings_file" 2>/dev/null; then
+        if [ -n "$(real_leaks "$settings_file")" ]; then
             fail "build path leaked in settings file"
             leaked=1
         fi
@@ -188,10 +209,13 @@ verify_installation() {
     # Check package conf files
     local confdir="$ghclibdir/lib/package.conf.d"
     if [ -d "$confdir" ]; then
-        if grep -rl "$build_dir" "$confdir"/*.conf 2>/dev/null; then
-            fail "build path leaked in package conf files"
-            leaked=1
-        fi
+        for conf in "$confdir"/*.conf; do
+            [ -f "$conf" ] || continue
+            if [ -n "$(real_leaks "$conf")" ]; then
+                fail "build path leaked in package conf $(basename "$conf")"
+                leaked=1
+            fi
+        done
     fi
 
     # Check binaries for embedded build paths (RPATH, string literals, etc.)
@@ -206,13 +230,31 @@ verify_installation() {
     bin_files=$(find "${scan_dirs[@]}" -maxdepth 3 -type f \( \
         -name '*.so' -o -name '*.so.*' -o -name '*.dylib' -o -name '*.dll' \
         -o -name '*.exe' -o -perm /111 \) 2>/dev/null || true)
+    # Strip DWARF debug sections before scanning: DW_AT_comp_dir bakes
+    # absolute build paths into debug info, which doesn't affect runtime
+    # relocatability but would produce a flood of false positives.
+    local strip_debug=0
+    if command -v objcopy >/dev/null 2>&1; then
+        strip_debug=1
+    fi
     while IFS= read -r f; do
         [ -n "$f" ] || continue
         # Only check actual binary files (ELF, Mach-O, PE), not scripts or data
         file "$f" | grep -qiE '(ELF|Mach-O|PE32|executable|shared object|dynamically linked)' || continue
-        if strings "$f" | grep -q "$build_dir"; then
+        local scan_file="$f"
+        local tmp_stripped=""
+        if [ "$strip_debug" -eq 1 ]; then
+            tmp_stripped="$(mktemp "$RELOCTEST_DIR/strip-XXXXXX")"
+            if objcopy --strip-debug "$f" "$tmp_stripped" 2>/dev/null; then
+                scan_file="$tmp_stripped"
+            fi
+        fi
+        local bin_leaks
+        bin_leaks=$(strings "$scan_file" | grep "$build_dir" | grep -v "^$prefix" || true)
+        [ -n "$tmp_stripped" ] && rm -f "$tmp_stripped"
+        if [ -n "$bin_leaks" ]; then
             fail "build path leaked in binary $(basename "$f") (in $(dirname "$f"))"
-            strings "$f" | grep "$build_dir" | head -3
+            echo "$bin_leaks" | head -3
             leaked=1
         fi
     done <<< "$bin_files"
@@ -274,9 +316,13 @@ verify_installation() {
         for bin in "$ghclibdir/bin"/*; do
             [ -f "$bin" ] || continue
             file "$bin" | grep -q ELF || continue
-            if ldd "$bin" 2>/dev/null | grep -q "$build_dir"; then
+            # Exclude the install prefix: those library paths are the
+            # legitimate runtime linking result, not a build-dir leak.
+            local ldd_leaks
+            ldd_leaks=$(ldd "$bin" 2>/dev/null | grep "$build_dir" | grep -v "$prefix" || true)
+            if [ -n "$ldd_leaks" ]; then
                 fail "$(basename "$bin") links to libraries in build directory"
-                ldd "$bin" 2>/dev/null | grep "$build_dir" | head -5
+                echo "$ldd_leaks" | head -5
                 ldd_issues=1
             fi
         done
@@ -372,7 +418,8 @@ main() {
 
     # Copy tarball to temp location before we potentially clean the build dir
     local tarball_copy
-    tarball_copy="$(mktemp /tmp/plinth-reloctest-tarball-XXXXXX.tar.xz)"
+    mkdir -p "$RELOCTEST_DIR"
+    tarball_copy="$(mktemp "$RELOCTEST_DIR/tarball-XXXXXX.tar.xz")"
     cp "$TARBALL" "$tarball_copy"
 
     # Clean build directory to ensure no runtime dependency on it
