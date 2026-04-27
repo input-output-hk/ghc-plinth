@@ -254,6 +254,7 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
             fi
 
             # Add wrapper scripts so `make install` creates $PREFIX/bin/uplc-ghc
+            mkdir -p "$dir/wrappers"
             echo 'exec "$executablename" -B"$libdir" ${1+"$@"}' > "$dir/wrappers/uplc-ghc-$VERSION"
             ( cd "$dir/wrappers" && ln -sf "uplc-ghc-$VERSION" "uplc-ghc" )
 

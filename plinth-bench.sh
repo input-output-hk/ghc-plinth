@@ -44,6 +44,9 @@ CABAL_ARGS=(
 
 cd "$PROJECT_DIR"
 
+echo "cabal update..."
+"$CABAL" "${CABAL_ARGS[@]}" update
+
 echo "building $TARGET_PKG:tests with uplc-ghc..."
 "$CABAL" "${CABAL_ARGS[@]}" build -j \
   -w "$UPLC_GHC" \
