@@ -288,8 +288,16 @@ filterIgnoredPlugins plugins = filter (not . isIgnoredPlugin) plugins
 updateStaticPluginArgs :: DynFlags -> [StaticPlugin] -> [StaticPlugin]
 updateStaticPluginArgs dflags = map updateOne
   where
-    ignored_opts = [ opt | (mod_nm, opt) <- pluginModNameOpts dflags
-                         , isIgnoredPlugin mod_nm ]
+    -- 'pluginModNameOpts' is built by prepending each new option, so it
+    -- is in reverse source order. 'loadPlugins' reverses it again before
+    -- handing args to a dynamically-loaded plugin (see 'attachOptions');
+    -- we have to do the same so that options like
+    -- '-fplugin-opt PlutusTx.Plugin:no-conservative-optimisation' followed
+    -- by '-fplugin-opt PlutusTx.Plugin:preserve-logging' are applied
+    -- left-to-right and a later option wins over an earlier implication.
+    ignored_opts = reverse [ opt
+                           | (mod_nm, opt) <- pluginModNameOpts dflags
+                           , isIgnoredPlugin mod_nm ]
     updateOne (StaticPlugin (PluginWithArgs p _old_args)) =
       StaticPlugin (PluginWithArgs p ignored_opts)
 
