@@ -185,7 +185,8 @@ initializePlugins hsc_env = do
 
 loadPlugins :: HscEnv -> IO ([LoadedPlugin], [Linkable], PkgsLoaded)
 loadPlugins hsc_env
-  = do { let active = filterIgnoredPlugins to_load
+  = do { let to_load = reverse $ pluginModNames dflags
+       ; let active = filterIgnoredPlugins to_load
        ; unless (null active) $
            checkExternalInterpreter hsc_env
        ; plugins_with_deps <- mapM loadPlugin active
@@ -194,7 +195,6 @@ loadPlugins hsc_env
        }
   where
     dflags  = hsc_dflags hsc_env
-    to_load = dynPluginModNamesToLoad hsc_env
 
     attachOptions mod_nm (plug, mod) =
         LoadedPlugin (PluginWithArgs plug (reverse options)) mod
@@ -255,10 +255,18 @@ dynPluginModNamesToLoad hsc_env =
 
 -- See Note [Ignoring PlutusTx.Plugin]
 isIgnoredPlugin :: ModuleName -> Bool
-isIgnoredPlugin mn = moduleNameString mn == "PlutusTx.Plugin"
+isIgnoredPlugin mn = moduleNameString mn `elem` ignoredPluginModuleNames
+
+-- | Plugin module names handled by the Plinth static plugin registered in
+-- @ghc/Main.hs@. They must be skipped during dynamic plugin loading,
+-- otherwise @uplc-ghc@ (which runs the external interpreter) aborts with
+-- \"Plugins require -fno-external-interpreter\" as soon as any test
+-- module uses @\{-\# OPTIONS_GHC -fplugin ... \#-\}@ for one of them.
+ignoredPluginModuleNames :: [String]
+ignoredPluginModuleNames = ["PlutusTx.Plugin", "Plinth.Plugin"]
 
 filterIgnoredPlugins :: [ModuleName] -> [ModuleName]
-filterIgnoredPlugins = filter (not . isIgnoredPlugin)
+filterIgnoredPlugins plugins = filter (not . isIgnoredPlugin) plugins
 
 -- | Update static plugin arguments from per-module -fplugin-opt
 -- options. See Note [Ignoring PlutusTx.Plugin].
