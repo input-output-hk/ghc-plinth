@@ -70,7 +70,7 @@ import Data.Maybe        ( mapMaybe )
 import Unsafe.Coerce     ( unsafeCoerce )
 import GHC.Linker.Types
 import GHC.Types.Unique.DFM
-import Data.List (partition, unzip4)
+import Data.List (unzip4)
 import GHC.Driver.Monad
 
 -- | Initialise plugins specified by the current DynFlags and update the session.
@@ -83,9 +83,9 @@ initializeSessionPlugins = getSession >>= liftIO . initializePlugins >>= setSess
 -- pluginModNames or pluginModNameOpts changes.
 initializePlugins :: HscEnv -> IO HscEnv
 initializePlugins hsc_env = do
-  {- XXX cleanup
-    -- See Note [Ignoring PlutusTx.Plugin]
-    let (_ignored, requested) = partition isIgnoredPlugin (pluginModNames dflags)
+    -- See Note [Ignoring PlutusTx.Plugin]: drop the ignored module names
+    -- before deciding whether the dynamic plugin set has changed.
+    let requested = filterIgnoredPlugins (pluginModNames dflags)
 
     -- check that plugin specifications didn't change
 
