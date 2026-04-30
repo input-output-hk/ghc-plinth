@@ -146,7 +146,8 @@ initializePlugins hsc_env
 -- Rather than requiring all source files to be patched to remove
 -- {-# OPTIONS_GHC -fplugin PlutusTx.Plugin #-} pragmas, we skip
 -- loading this plugin dynamically. Per-module -fplugin-opt options
--- are forwarded to the static plugin by updateStaticPluginArgs.
+-- are forwarded to the static plugin by 'refreshStaticArgs' in
+-- 'initializePlugins'. See Note [Per-module options for static plugins].
 
 loadPlugins :: HscEnv -> IO ([LoadedPlugin], [Linkable], PkgsLoaded)
 loadPlugins hsc_env
@@ -232,39 +233,6 @@ ignoredPluginModuleNames = ["PlutusTx.Plugin", "Plinth.Plugin"]
 
 filterIgnoredPlugins :: [ModuleName] -> [ModuleName]
 filterIgnoredPlugins plugins = filter (not . isIgnoredPlugin) plugins
-
--- | Update static plugin arguments from per-module -fplugin-opt
--- options. See Note [Ignoring PlutusTx.Plugin].
---
--- Static plugins are registered at startup with the command-line
--- options available at that point. Per-module OPTIONS_GHC pragmas
--- (e.g. -fplugin-opt PlutusTx.Plugin:defer-errors) are added to
--- pluginModNameOpts later and need to be forwarded.
---
--- Each registered static plugin gets every option keyed by an ignored
--- plugin module name. That's broader than strictly needed — a plugin
--- targeted by @-fplugin-opt PlutusTx.Plugin:foo@ also sees opts meant
--- for @Plinth.Plugin@ — but @PlutusTx.Plugin.plugin@ and
--- @Plinth.Plugin.plugin@ both delegate to @parsePluginOptions@ from
--- @PlutusTx.Options@, which accepts the same option schema, so the
--- extra options are harmless. Refining this would require tagging each
--- 'StaticPlugin' with the module name it represents, which would be a
--- @ghc@ library ABI change.
-updateStaticPluginArgs :: DynFlags -> [StaticPlugin] -> [StaticPlugin]
-updateStaticPluginArgs dflags = map updateOne
-  where
-    -- 'pluginModNameOpts' is built by prepending each new option, so it
-    -- is in reverse source order. 'loadPlugins' reverses it again before
-    -- handing args to a dynamically-loaded plugin (see 'attachOptions');
-    -- we have to do the same so that options like
-    -- '-fplugin-opt PlutusTx.Plugin:no-conservative-optimisation' followed
-    -- by '-fplugin-opt PlutusTx.Plugin:preserve-logging' are applied
-    -- left-to-right and a later option wins over an earlier implication.
-    ignored_opts = reverse [ opt
-                           | (mod_nm, opt) <- pluginModNameOpts dflags
-                           , isIgnoredPlugin mod_nm ]
-    updateOne (StaticPlugin (PluginWithArgs p _old_args)) =
-      StaticPlugin (PluginWithArgs p ignored_opts)
 
 loadFrontendPlugin :: HscEnv -> ModuleName -> IO (FrontendPlugin, [Linkable], PkgsLoaded)
 loadFrontendPlugin hsc_env mod_name = do

@@ -231,6 +231,17 @@ data ExternalPlugin = ExternalPlugin
 data StaticPlugin = StaticPlugin
   { spPlugin     :: PluginWithArgs
   -- ^ the actual plugin together with its commandline arguments
+  , spModuleName :: Maybe ModuleName
+  -- ^ The plugin module name this static plugin claims, when it is
+  -- a compiled-in implementation of a plugin that source modules
+  -- request via @-fplugin M@. 'Nothing' means the static plugin
+  -- runs unconditionally and is not associated with any
+  -- @-fplugin@-named module.
+  --
+  -- When 'Just', this lets 'GHC.Runtime.Loader.initializePlugins'
+  -- (a) skip the dynamic load for module @M@ — the static plugin
+  -- already provides it — and (b) forward per-module
+  -- @-fplugin-opt M:k=v@ pragmas to this static plugin.
   }
 
 lpModuleName :: LoadedPlugin -> ModuleName
