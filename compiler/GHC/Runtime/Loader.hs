@@ -82,11 +82,7 @@ initializeSessionPlugins = getSession >>= liftIO . initializePlugins >>= setSess
 -- actual compilation starts. Idempotent operation. Should be re-called if
 -- pluginModNames or pluginModNameOpts changes.
 initializePlugins :: HscEnv -> IO HscEnv
-initializePlugins hsc_env = do
-    -- See Note [Ignoring PlutusTx.Plugin]: drop the ignored module names
-    -- before deciding whether the dynamic plugin set has changed.
-    let requested = filterIgnoredPlugins (pluginModNames dflags)
-
+initializePlugins hsc_env
     -- check that plugin specifications didn't change
 
     -- static plugins: see Note [Per-module options for static plugins]
@@ -103,7 +99,7 @@ initializePlugins hsc_env = do
 
   = return hsc_env -- no change, no need to reload plugins
 
-  | otherwise -}
+  | otherwise
   = do (loaded_plugins, links, pkgs) <- loadPlugins hsc_env
        external_plugins <- loadExternalPlugins (externalPluginSpecs dflags)
        let plugins' = (hsc_plugins hsc_env) { staticPlugins    = map refreshStaticArgs (staticPlugins (hsc_plugins hsc_env))
@@ -113,37 +109,6 @@ initializePlugins hsc_env = do
                                             }
        let hsc_env' = hsc_env { hsc_plugins = plugins' }
        withPlugins (hsc_plugins hsc_env') driverPlugin hsc_env'
-    let no_change
-            -- dynamic plugins
-          | loaded_plugins <- loadedPlugins (hsc_plugins hsc_env)
-          , map lpModuleName loaded_plugins == reverse requested
-          , all same_args loaded_plugins
-            -- external plugins
-          , external_plugins <- externalPlugins (hsc_plugins hsc_env)
-          , check_external_plugins external_plugins (externalPluginSpecs dflags)
-            -- FIXME: we should check static plugins too
-          = True
-          | otherwise
-          = False
-
-    -- See Note [Ignoring PlutusTx.Plugin]
-    -- Forward per-module -fplugin-opt options to static plugins.
-    let updated_statics = updateStaticPluginArgs dflags
-                            (staticPlugins (hsc_plugins hsc_env))
-
-    if no_change
-      then return hsc_env { hsc_plugins = (hsc_plugins hsc_env)
-                              { staticPlugins = updated_statics } }
-      else do
-        (loaded_plugins, links, pkgs) <- loadPlugins hsc_env
-        external_plugins <- loadExternalPlugins (externalPluginSpecs dflags)
-        let plugins' = (hsc_plugins hsc_env) { staticPlugins    = updated_statics
-                                              , externalPlugins  = external_plugins
-                                              , loadedPlugins    = loaded_plugins
-                                              , loadedPluginDeps = (links, pkgs)
-                                              }
-        let hsc_env' = hsc_env { hsc_plugins = plugins' }
-        withPlugins (hsc_plugins hsc_env') driverPlugin hsc_env'
   where
     dflags = hsc_dflags hsc_env
     -- dynamic plugins
