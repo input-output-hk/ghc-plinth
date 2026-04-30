@@ -274,23 +274,22 @@ main' postLoadMode units dflags0 args flagWarnings = do
 #if defined(PLINTH)
   -- Register both @PlutusTx.Plugin@ and @Plinth.Plugin@ as static plugins.
   -- The former rewrites @'plc@ markers, the latter rewrites @'plinthc@
-  -- markers. Both accept the same @-fplugin-opt@ option schema, so each
-  -- plugin receives every option keyed by either name and ignores the
-  -- ones that aren't relevant to its markers. Initial args here reflect
-  -- the command-line flags seen at startup; per-module pragmas are
-  -- forwarded later by 'updateStaticPluginArgs'.
+  -- markers. Each is tagged with its 'spModuleName' so that
+  -- 'initializePlugins' (a) skips dynamic loading for source modules
+  -- that request the plugin via @-fplugin@, and (b) forwards per-module
+  -- @-fplugin-opt M:k=v@ pragmas to the right static plugin. Initial
+  -- args here reflect the command-line flags seen at startup;
+  -- per-module pragmas are refreshed later by
+  -- 'GHC.Runtime.Loader.initializePlugins' on each call.
   let plutustx_plugin_mod_name = mkModuleName "PlutusTx.Plugin"
       plinth_plugin_mod_name   = mkModuleName "Plinth.Plugin"
-      plinth_initial_args =
-        [ opt | (mod_name, opt) <- pluginModNameOpts dflags6
-              , mod_name == plutustx_plugin_mod_name
-             || mod_name == plinth_plugin_mod_name
-        ]
-      mkStatic plug =
-        StaticPlugin (PluginWithArgs plug plinth_initial_args)
+      argsFor mn =
+        [ opt | (m, opt) <- pluginModNameOpts dflags6, m == mn ]
+      mkStatic mn plug =
+        StaticPlugin (PluginWithArgs plug (argsFor mn)) (Just mn)
       static_plugins =
-        [ mkStatic PlutusTx.Plugin.plugin
-        , mkStatic Plinth.Plugin.plugin
+        [ mkStatic plutustx_plugin_mod_name PlutusTx.Plugin.plugin
+        , mkStatic plinth_plugin_mod_name   Plinth.Plugin.plugin
         ]
 
   modifySession $ \hsc_env ->
