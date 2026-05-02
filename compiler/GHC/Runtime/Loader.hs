@@ -115,13 +115,22 @@ initializePlugins hsc_env
     plugin_args = pluginModNameOpts dflags
     same_args p = paArguments (lpPlugin p) == argumentsForPlugin (lpModuleName p) plugin_args
     argumentsForPlugin mn = map snd . filter ((== mn) . fst)
-    -- static plugins: see Note [Per-module options for static plugins]
+    -- static plugins: see Note [Per-module options for static plugins].
+    -- 'pluginModNameOpts' is built by prepending each new option, so it is
+    -- in reverse source order. 'attachOptions' (used for dynamically loaded
+    -- plugins) reverses it before handing args to the plugin; we must do
+    -- the same so that options like
+    --   '-fplugin-opt M:no-conservative-optimisation' followed by
+    --   '-fplugin-opt M:preserve-logging'
+    -- are applied left-to-right and a later option wins over an earlier
+    -- option's implications.
+    staticArgsForPlugin mn = reverse (argumentsForPlugin mn plugin_args)
     refreshStaticArgs sp = case spModuleName sp of
       Nothing -> sp
-      Just mn -> sp { spPlugin = (spPlugin sp) { paArguments = argumentsForPlugin mn plugin_args } }
+      Just mn -> sp { spPlugin = (spPlugin sp) { paArguments = staticArgsForPlugin mn } }
     static_args_unchanged sp = case spModuleName sp of
       Nothing -> True
-      Just mn -> paArguments (spPlugin sp) == argumentsForPlugin mn plugin_args
+      Just mn -> paArguments (spPlugin sp) == staticArgsForPlugin mn
     -- external plugins
     check_external_plugin p spec = and
       [ epUnit                p  == esp_unit_id spec
