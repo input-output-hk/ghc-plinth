@@ -1443,16 +1443,39 @@ ocGetNames_MachO(ObjectCode* oc)
 
                 RtsSymbolInfo *existing = lookupStrHashTable(symhash, nm);
                 if (existing != NULL) {
-                    /* COMMON symbol already allocated by a previously-loaded
-                     * object; reuse that address so relocations resolve to
-                     * the same storage. */
+                    /* See Note [COMMON symbol size mismatches]
+                     * in rts/linker/PEi386.c */
                     if (sz > existing->size) {
-                        barf("linker: trying to link COMMON symbols %s with"
-                             " incompatible sizes: previous size %llu,"
-                             " new size %lu\n",
-                             nm,
-                             (long long unsigned int) existing->size,
-                             sz);
+                        if (existing->size > 0) {
+                            /* Existing COMMON allocation is too small;
+                             * allocate fresh zeroed storage and rewrite the
+                             * hash table entry so later relocations see the
+                             * new (larger) address. The smaller allocation is
+                             * leaked but unreachable in the normal
+                             * loadObj+...+resolveObjs flow. */
+                            void *new_storage = stgCallocBytes(
+                                1, sz,
+                                "ocGetNames_MachO(common symbol grow)");
+                            IF_DEBUG(linker_verbose,
+                                     debugBelch("ocGetNames_MachO: COMMON"
+                                                " symbol %s grew from %llu"
+                                                " to %lu; relocating @ %p\n",
+                                                nm,
+                                                (long long unsigned int) existing->size,
+                                                sz, new_storage));
+                            existing->value = new_storage;
+                            existing->size = sz;
+                        } else {
+                            /* existing->size == 0: previous entry is a
+                             * regular section-defined symbol whose real
+                             * storage subsumes this COMMON declaration. */
+                            IF_DEBUG(linker_verbose,
+                                     debugBelch("ocGetNames_MachO: COMMON"
+                                                " symbol %s subsumed by"
+                                                " existing definition"
+                                                " (requested %lu bytes)\n",
+                                                nm, sz));
+                        }
                     }
                     nlist->n_value = (unsigned long)existing->value;
                     oc->info->macho_symbols[i].addr = existing->value;

@@ -1013,14 +1013,45 @@ ocGetNames_ELF ( ObjectCode* oc )
                    isLocal = false;
                    RtsSymbolInfo *existing = lookupStrHashTable(symhash, nm);
                    if (existing != NULL) {
-                       /* COMMON symbol already allocated by a previously-loaded
-                        * object; reuse that address so relocations resolve to
-                        * the same storage. */
-                       if(symbol->elf_sym->st_size > existing->size) {
-                           barf("linker: trying to link COMMON symbols %s with incompatible sizes: previous size %llu, new size %llu\n",
-                                   nm,
-                                   (long long unsigned int) existing->size,
-                                   (long long unsigned int) symbol->elf_sym->st_size);
+                       /* See Note [COMMON symbol size mismatches]
+                        * in rts/linker/PEi386.c */
+                       unsigned long new_size =
+                           (unsigned long) symbol->elf_sym->st_size;
+                       if (new_size > existing->size) {
+                           if (existing->size > 0) {
+                               /* Existing COMMON allocation is too small;
+                                * allocate fresh storage and rewrite the hash
+                                * table entry so later relocations see the new
+                                * (larger) address. The smaller allocation is
+                                * leaked but unreachable in the normal
+                                * loadObj+...+resolveObjs flow. */
+                               void *new_storage = mmapAnonForLinker(new_size);
+                               if (new_storage == NULL) {
+                                   barf("ocGetNames_ELF: failed to allocate"
+                                        " replacement BSS for COMMON symbol %s",
+                                        nm);
+                               }
+                               IF_DEBUG(linker_verbose,
+                                        debugBelch("COMMON symbol %s grew from"
+                                                   " %llu to %llu; relocating"
+                                                   " @ %p\n",
+                                                   nm,
+                                                   (long long unsigned int) existing->size,
+                                                   (long long unsigned int) new_size,
+                                                   new_storage));
+                               existing->value = new_storage;
+                               existing->size = new_size;
+                           } else {
+                               /* existing->size == 0: previous entry is a
+                                * regular section-defined symbol whose real
+                                * storage subsumes this COMMON declaration. */
+                               IF_DEBUG(linker_verbose,
+                                        debugBelch("COMMON symbol %s subsumed"
+                                                   " by existing definition"
+                                                   " (requested %llu bytes)\n",
+                                                   nm,
+                                                   (long long unsigned int) new_size));
+                           }
                        }
                        symbol->addr = existing->value;
                        common_already_defined = true;
