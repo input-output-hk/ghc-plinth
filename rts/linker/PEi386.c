@@ -344,6 +344,40 @@
 
 */
 
+/* Note [COMMON symbol size mismatches]
+   ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   COMMON (uninitialized global / "tentative") symbols carry a size that says
+   "I need at least N bytes of zeroed storage for this name". Two object files
+   may declare the same COMMON symbol with different sizes, and a third object
+   may provide a real definition of that name in an initialized data section.
+   System linkers reconcile this by:
+
+     * picking the largest size when several COMMON declarations meet, and
+     * letting any strong (section-defined) definition subsume all COMMON
+       declarations regardless of their requested sizes.
+
+   The runtime linker tracks per-symbol storage in `RtsSymbolInfo.size`, but
+   that field is only populated for COMMON allocations -- a section-defined
+   symbol enters the hash table with `size == 0` because the field is
+   meaningless there (the real storage lives in its section).
+
+   Concretely we have seen this with the blst cryptographic library, where
+   `__blst_platform_cap` is defined as 4 bytes of `.data` in one archive
+   member and declared as a 4-byte COMMON in another. The COMMON declaration
+   is processed second, finds the strong definition already in the hash table
+   with `size == 0`, and (without the fix below) barfs on the apparent size
+   mismatch.
+
+   The handling in ocGetNames_PEi386 mirrors the system linker:
+     * existing strong definition (`size == 0`)  -> reuse its address
+     * existing COMMON, new is no larger          -> reuse its address
+     * existing COMMON, new is larger             -> allocate fresh, larger
+       storage, rewrite `existing->value` so all later relocations see the
+       new address. The earlier (smaller) allocation is leaked but cannot be
+       reached by any not-yet-resolved object, so this is safe in the normal
+       loadObj+...+resolveObjs flow used by the runtime linker.
+*/
+
 #include "Rts.h"
 
 #if defined(x86_64_HOST_ARCH)
@@ -1796,16 +1830,47 @@ ocGetNames_PEi386 ( ObjectCode* oc )
             previously-loaded object already allocated storage for it. */
           RtsSymbolInfo *existing = lookupStrHashTable(symhash, sname);
           if (existing != NULL) {
-              /* COMMON symbol already allocated by a previously-loaded
-               * object; reuse that address so relocations resolve to
-               * the same storage. */
+              /* See Note [COMMON symbol size mismatches] */
               if (symValue > existing->size) {
-                  barf("linker: trying to link COMMON symbols %s with"
-                       " incompatible sizes: previous size %llu,"
-                       " new size %u\n",
-                       sname,
-                       (long long unsigned int) existing->size,
-                       symValue);
+                  if (existing->size > 0) {
+                      /* The existing entry was a COMMON allocation but is now
+                       * too small. Allocate fresh, larger storage and rewrite
+                       * the hash table entry so relocations resolved later
+                       * (in ocResolve_PEi386) see the new address. The old
+                       * smaller allocation is leaked but harmless: only
+                       * objects already fully resolved against it can still
+                       * reach it, and they were already sized for it. */
+                      SymbolAddr *new_storage =
+                          m32_alloc(oc->rw_m32, symValue, 16);
+                      if (new_storage == NULL) {
+                          barf("ocGetNames_PEi386: failed to allocate"
+                               " replacement BSS for COMMON symbol %s",
+                               sname);
+                      }
+                      memset(new_storage, 0, symValue);
+                      addProddableBlock(oc, new_storage, symValue);
+                      IF_DEBUG(linker_verbose,
+                               debugBelch("COMMON symbol %s grew from %lu"
+                                          " to %u; relocating @ %p\n",
+                                          sname,
+                                          (unsigned long) existing->size,
+                                          symValue, new_storage));
+                      existing->value = new_storage;
+                      existing->size = symValue;
+                  } else {
+                      /* existing->size == 0 means the previous entry is a
+                       * regular section-defined symbol (size is only tracked
+                       * for COMMON allocations). Its real storage lives in
+                       * its defining section and is presumed to satisfy this
+                       * COMMON declaration's minimum, just as a system linker
+                       * would prefer the strong definition over a tentative
+                       * one. */
+                      IF_DEBUG(linker_verbose,
+                               debugBelch("COMMON symbol %s subsumed by"
+                                          " existing definition (requested"
+                                          " %u bytes)\n",
+                                          sname, symValue));
+                  }
               }
               addr = existing->value;
               common_already_defined = true;
