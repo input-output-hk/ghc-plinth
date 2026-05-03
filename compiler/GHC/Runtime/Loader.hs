@@ -102,12 +102,13 @@ initializePlugins hsc_env
   | otherwise
   = do (loaded_plugins, links, pkgs) <- loadPlugins hsc_env
        external_plugins <- loadExternalPlugins (externalPluginSpecs dflags)
-       let plugins' = (hsc_plugins hsc_env) { staticPlugins    = map refreshStaticArgs (staticPlugins (hsc_plugins hsc_env))
+       let new_static_plugins = map refreshStaticArgs (staticPlugins (hsc_plugins hsc_env))
+           plugins' = (hsc_plugins hsc_env) { staticPlugins    = new_static_plugins
                                             , externalPlugins  = external_plugins
                                             , loadedPlugins    = loaded_plugins
                                             , loadedPluginDeps = (links, pkgs)
                                             }
-       let hsc_env' = hsc_env { hsc_plugins = plugins' }
+           hsc_env' = hsc_env { hsc_plugins = plugins' }
        withPlugins (hsc_plugins hsc_env') driverPlugin hsc_env'
   where
     dflags = hsc_dflags hsc_env
