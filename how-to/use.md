@@ -36,8 +36,8 @@ Adapt the two `index-state` dates to your project: they pin the package set, and
 the right values depend on the `plutus-tx` version your `uplc-ghc` targets.
 
 In addition you may want to add the following `source-repository-package` blocks
-that build the cardano crypto C libraries (`libsodium`, `secp256k1`, `blst`)
-from source, so you do not need them installed on your system.
+that build the C crypto libraries used by Cardano (`libsodium`, `secp256k1`,
+`blst`) from source, so you do not need them installed on your system.
 
 **Not for production.** The vendored crypto C libraries pulled in by the
 `*-clib` `source-repository-package`s below have not been audited. Use this
