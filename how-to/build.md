@@ -14,8 +14,22 @@ from source as described below.
 
 ## Building from source
 
-This assumes the [prerequisites]({% link reference/prerequisites.md %}) are on
-your `PATH`.
+### Prerequisites
+
+`plinth-build.sh` expects the following tools on `PATH`:
+
+| Tool      | Requirement                                          |
+| --------- | ---------------------------------------------------- |
+| `ghc`     | boot compiler `ghc-9.6.7`                            |
+| `cabal`   | `>= 3.14.2.0`                                         |
+| `happy`   | `happy-1.20.1.1` (built locally if missing)          |
+| `alex`    | `alex-3.5.4.0` (built locally if missing)            |
+| `python3` | required by Hadrian                                  |
+| `tar`     | required to produce the binary distribution archive  |
+| `xz`      | required to compress the binary distribution archive |
+
+`happy` and `alex` are built locally into `_build/tools/` if they are not
+found, so they are effectively optional. The others must be present.
 
 ### 1. Clone with submodules
 
@@ -40,29 +54,58 @@ From the root of the repository:
 $ ./plinth-build.sh
 ```
 
-The script bootstraps GHC and then builds `uplc-ghc`. When it finishes, the
-compiler is at `_build/stage1/bin/uplc-ghc` and a binary distribution archive
-is under `_build/bindist/` (see [Build outputs]({% link reference/build-outputs.md %})).
+The script bootstraps GHC and then builds `uplc-ghc`. What it produces is
+described under [Build outputs](#build-outputs) below.
 
-### Force a full rebuild
+### Build options
 
-Set `REBUILD=1` to re-boot, re-configure, and rebuild from scratch:
-
-```console
-$ REBUILD=1 ./plinth-build.sh
-```
-
-### Build a release (with documentation)
-
-Set `RELEASE=1` to build the release flavour, which also builds the
-documentation (and pulls in more build dependencies):
+`plinth-build.sh` is controlled by environment variables. The two most common
+force a full rebuild or select the release flavour:
 
 ```console
-$ RELEASE=1 ./plinth-build.sh
+$ REBUILD=1 ./plinth-build.sh   # re-boot, re-configure, and rebuild from scratch
+$ RELEASE=1 ./plinth-build.sh   # release flavour, which also builds documentation
 ```
 
-See [Environment variables]({% link reference/environment-variables.md %}) for
-the full list of knobs.
+| Variable  | Default | Effect                                                        |
+| --------- | ------- | ------------------------------------------------------------- |
+| `REBUILD` | `0`     | Set to `1` to force a full rebuild (re-boot, re-configure).   |
+| `RELEASE` | `0`     | Set to `1` to build the release flavour including documentation (more build dependencies). |
+
+It also honours tool-location overrides such as `GHC`, `CABAL`, `HAPPY`,
+`ALEX`, and `PYTHON`, as well as `HADRIAN_ARGS`, `CONFIGURE_ARGS`, and
+`FLAVOUR`, when you need to point it at specific tools or change the build
+flavour.
+
+### Build outputs
+
+When `plinth-build.sh` finishes it has produced two things.
+
+**The compiler.** The development build is installed at:
+
+```
+_build/stage1/bin/uplc-ghc
+```
+
+This is the binary you point cabal at (see
+[Use uplc-ghc in a project]({% link how-to/use.md %})).
+
+**Binary distribution archive.** A relocatable bindist is produced under
+`_build/bindist/`:
+
+```
+_build/bindist/ghc-<version>-<platform>.tar.xz
+```
+
+The build script fixes up the bindist so that it ships `uplc-ghc` (with the
+built-in Plinth plugin) instead of the boot GHC:
+
+- `uplc-ghc` is added (as `uplc-ghc-<version>` plus an `uplc-ghc` wrapper).
+- The boot `ghc` binary is removed, so installing the bindist does not replace
+  a user's existing GHC.
+- `runghc` and `runhaskell` are renamed to `uplc-runghc` and `uplc-runhaskell`.
+
+Installing the bindist therefore creates `$PREFIX/bin/uplc-ghc`.
 
 ## Test and benchmark
 

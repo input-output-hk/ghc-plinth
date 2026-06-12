@@ -4,8 +4,6 @@ header:
     url: /tutorials/
   - title: How-to
     url: /how-to/
-  - title: Reference
-    url: /reference/
   - title: Explanation
     url: /explanation/
   - title: GitHub
@@ -31,16 +29,6 @@ docs:
         url: /how-to/use/
       - title: Generate a blueprint
         url: /how-to/generate-blueprint/
-
-  - title: Reference
-    url: /reference/
-    children:
-      - title: Prerequisites
-        url: /reference/prerequisites/
-      - title: Environment variables
-        url: /reference/environment-variables/
-      - title: Build outputs
-        url: /reference/build-outputs/
 
   - title: Explanation
     url: /explanation/
