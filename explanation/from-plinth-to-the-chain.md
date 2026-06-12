@@ -83,9 +83,9 @@ machine-readable interface.
 Crucially, CIP-57 is **language-agnostic**: it is a Cardano-wide standard, and
 tools for other languages (Aiken, for instance) emit blueprints too. What is
 Plinth-specific is only the *library and generator programs* that produce one.
-The Plinth project template ships exactly such generators &mdash; see
-[Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %}),
-which runs `gen-auction-validator-blueprint` to write a blueprint to a file.
+
+For a closer look at what a blueprint contains, how it is produced and used, and
+where its limits lie, see [Contract blueprints]({% link explanation/blueprints.md %}).
 
 ## Script hash and script address (generic)
 

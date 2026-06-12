@@ -51,6 +51,8 @@ docs:
         url: /explanation/plutus-core/
       - title: "From Plinth to the chain"
         url: /explanation/from-plinth-to-the-chain/
+      - title: "Contract blueprints (CIP-57)"
+        url: /explanation/blueprints/
       - title: Languages for smart contracts
         url: /explanation/languages/
       - title: About Plinth and this fork
