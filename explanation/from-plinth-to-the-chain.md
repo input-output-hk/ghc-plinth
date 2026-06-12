@@ -29,8 +29,8 @@ from there they all use exactly the same machinery shown below.
 ## Compiling to UPLC (Plinth-specific)
 
 Plinth is a subset of Haskell, so it is compiled by GHC. A
-[GHC plugin]({% link explanation/static-plugin.md %}) intercepts the definitions
-marked for on-chain use and takes them down a pipeline of progressively
+[GHC plugin]({% link explanation/standalone-compiler.md %}) intercepts the
+definitions marked for on-chain use and takes them down a pipeline of progressively
 lower-level representations:
 
 - **GHC Core** &mdash; the ordinary intermediate language GHC already uses. The
@@ -45,7 +45,7 @@ The result is wrapped in a `CompiledCode` value (the program, plus the PIR kept
 around for debugging). This whole pipeline is the *only* Plinth-specific part of
 the story. Because the plugin is built into `uplc-ghc`, compiling a module that
 defines Plinth code yields this UPLC alongside the usual GHC outputs &mdash; see
-[About Plinth and this fork]({% link explanation/about.md %}).
+[The Plinth standalone compiler]({% link explanation/standalone-compiler.md %}).
 
 ## Serialising the script (generic)
 

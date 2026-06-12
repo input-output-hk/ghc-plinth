@@ -13,5 +13,4 @@ your understanding rather than get something done.
 - [Contract blueprints (CIP-57)]({% link explanation/blueprints.md %})
 - [The structure of a Plinth smart contract]({% link explanation/structure.md %})
 - [Languages for smart contracts]({% link explanation/languages.md %})
-- [About Plinth and this fork]({% link explanation/about.md %})
-- [The built-in static plugin]({% link explanation/static-plugin.md %})
+- [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})

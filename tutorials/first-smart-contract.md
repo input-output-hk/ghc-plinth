@@ -106,8 +106,8 @@ comfortable.
 
 - [Use uplc-ghc in a project]({% link how-to/use.md %}) &mdash; point your own
   project at the compiler instead of the template.
-- [The built-in static plugin]({% link explanation/static-plugin.md %}) &mdash;
-  understand what `uplc-ghc` is doing under the hood.
+- [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})
+  &mdash; understand what `uplc-ghc` is doing under the hood.
 - [Plinth user guide][plinth] &mdash; learn to write Plinth code of your own.
 
 [plinth]: https://plutus.cardano.intersectmbo.org/docs/

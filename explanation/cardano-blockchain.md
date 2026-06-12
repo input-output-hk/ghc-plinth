@@ -94,7 +94,7 @@ Cardano ledger actually executes.
 
 - [How smart contracts run: Plutus Core and the CEK machine]({% link explanation/plutus-core.md %})
   &mdash; what validators are compiled to, and how the ledger evaluates them.
-- [About Plinth and this fork]({% link explanation/about.md %})
+- [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})
 - [Cardano][cardano]
 
 [cardano]: https://cardano.org/

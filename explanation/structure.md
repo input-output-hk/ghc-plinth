@@ -14,7 +14,7 @@ on-chain code and the off-chain code that deploys and interacts with it.
 
 ## An ordinary Haskell project
 
-Because [Plinth is a subset of Haskell]({% link explanation/about.md %}), a
+Because [Plinth is a subset of Haskell]({% link explanation/standalone-compiler.md %}), a
 Plinth project is just a cabal package. The entire `cabal-install` workflow
 applies unchanged: dependencies are resolved from Hackage and the Cardano
 package repository (CHaP), code is organised into modules, a library, and
@@ -136,8 +136,8 @@ executables are the off-chain half consuming them.
   script reaches a transaction.
 - [Contract blueprints (CIP-57)]({% link explanation/blueprints.md %}) &mdash;
   what the off-chain blueprint generators emit.
-- [The built-in static plugin]({% link explanation/static-plugin.md %}) &mdash;
-  why building with `uplc-ghc` needs no plugin configuration.
+- [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})
+  &mdash; why building with `uplc-ghc` needs no plugin configuration.
 - [Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %})
   &mdash; the same template, built step by step.
 - [Plinth user guide][plinth] &mdash; for writing Plinth code itself, which will

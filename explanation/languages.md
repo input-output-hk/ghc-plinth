@@ -34,7 +34,8 @@ axes capture most of the differences:
 **[Plinth][plinth]** (formerly Plutus Tx) is a subset of Haskell. You write
 ordinary Haskell and a GHC plugin translates the relevant definitions to UPLC
 &mdash; this fork bakes that plugin into the compiler as `uplc-ghc` (see
-[About Plinth and this fork]({% link explanation/about.md %})). It is IOG's
+[The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})).
+It is IOG's
 reference implementation, so it tracks the ledger's capabilities closely and
 gives access to the full Haskell ecosystem, which suits teams already fluent in
 Haskell. Plinth is not limited to on-chain validators: because Plinth code is
@@ -112,7 +113,7 @@ the choice is about the path to that target, not the target itself.
 
 - [How smart contracts run: Plutus Core and the CEK machine]({% link explanation/plutus-core.md %})
   &mdash; the common compilation target these languages share.
-- [About Plinth and this fork]({% link explanation/about.md %})
+- [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})
 - [Plinth user guide][plinth]
 - [Cardano smart-contract languages][devportal] &mdash; the Cardano Developer
   Portal's overview of the options.
