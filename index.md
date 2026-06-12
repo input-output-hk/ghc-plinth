@@ -1,6 +1,6 @@
 ---
 layout: default
-title: Overview
+title: Home
 nav_order: 1
 ---
 
@@ -8,28 +8,27 @@ nav_order: 1
 
 A fork of [GHC](https://www.haskell.org/ghc/) that embeds the
 [Plinth][plinth] compiler, used to write smart contracts for the
-[Cardano][cardano] blockchain.
+[Cardano][cardano] blockchain. Plinth (formerly Plutus Tx) is a subset of
+Haskell compiled to **Plutus Core**; this fork ships the compiler as a
+built-in static GHC plugin, producing a self-contained compiler called
+**`uplc-ghc`**.
 
-Plinth (formerly known as Plutus Tx) is a subset of Haskell compiled to
-**Plutus Core**. In this fork the Plinth compiler is shipped as a built-in
-GHC Core plugin, producing a self-contained compiler called **`uplc-ghc`**:
-compiling a module that defines Plinth code yields Plutus Core in addition to
-the usual GHC outputs.
+## Finding your way around
 
-## Why a fork of GHC?
+This documentation follows the [Diataxis](https://diataxis.fr/) framework,
+which separates docs into four kinds by what you need from them:
 
-Plinth is normally compiled by loading the `plutus-tx-plugin` as an ordinary
-GHC plugin. This fork instead bakes the plugin in as a built-in *static*
-plugin. The result, `uplc-ghc`, behaves like a regular GHC but emits Plutus
-Core for Plinth modules without any extra plugin configuration on the user's
-side.
-
-## Where to go next
-
-- [Building from source]({{ '/build' | relative_url }}) — clone the repository and run `plinth-build.sh`.
-- [Using uplc-ghc]({{ '/usage' | relative_url }}) — point your project at the produced compiler.
-- [Testing &amp; benchmarks]({{ '/testing' | relative_url }}) — run the example project and golden benchmarks.
-- [Examples]({{ '/examples' | relative_url }}) — the bundled Plinth example project and its Plutus Core output.
+- **[Tutorials]({% link tutorials/index.md %})** &mdash; *learning-oriented.*
+  Start here if you are new: a hands-on lesson that walks you through compiling
+  your first smart contract.
+- **[How-to guides]({% link how-to/index.md %})** &mdash; *task-oriented.*
+  Practical recipes for a specific job: build the compiler, use it in a
+  project, test and benchmark it.
+- **[Reference]({% link reference/index.md %})** &mdash; *information-oriented.*
+  The dry facts: required tools, environment variables, build outputs.
+- **[Explanation]({% link explanation/index.md %})** &mdash;
+  *understanding-oriented.* Background and discussion: what Plinth is and how
+  this fork works.
 
 ## External documentation
 
