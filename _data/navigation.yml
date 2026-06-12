@@ -55,6 +55,8 @@ docs:
         url: /explanation/from-plinth-to-the-chain/
       - title: "Contract blueprints (CIP-57)"
         url: /explanation/blueprints/
+      - title: "The structure of a Plinth smart contract"
+        url: /explanation/structure/
       - title: Languages for smart contracts
         url: /explanation/languages/
       - title: About Plinth and this fork
