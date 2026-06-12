@@ -8,81 +8,105 @@ nav_order: 1
 # Your first smart contract with Plinth
 
 In this tutorial you will compile a real smart contract to Plutus Core using
-the Plinth compiler, and look at the result. By the end you will have built the
-bundled example project with `uplc-ghc` and seen the Plutus Core it produces.
+the Plinth compiler, and look at the result. By the end you will have cloned the
+[Plinth project template][plinth-template], built it with `uplc-ghc`, and
+generated a CIP-57 blueprint from the compiled validator.
 
-You do not need to write any code: everything you need ships with the
-repository.
+You do not need to write any code: the example ships with the template project.
 
 ## Before you start
 
 You need a built `uplc-ghc`. If you have not built it yet, follow
 [Build the compiler from source]({% link how-to/build.md %}) first &mdash; this
-tutorial waits for you here.
+tutorial waits for you here. Note where the `uplc-ghc` binary ended up; you will
+point cabal at it below. Throughout this tutorial, replace `/path/to/uplc-ghc`
+with the actual path to your `uplc-ghc`.
 
-You will also need the `plutus` submodule, which is fetched automatically when
-you clone with `--recurse-submodules`.
+You will also need `git` and a recent `cabal` (3.8 or newer) on your `PATH`.
 
-## Step 1: Meet the example project
+## Step 1: Get the example
 
-The repository bundles a small Plinth project under `plinth/test/`, adapted
-from the [Plinth project template][plinth-template]. Its smart-contract sources
-live in `plinth/test/src/`:
+The example contract lives in its own repository, the Plinth project template.
+Clone it anywhere you like:
+
+```console
+$ git clone https://github.com/IntersectMBO/plinth-template.git
+$ cd plinth-template
+```
+
+The rest of this tutorial runs from inside this `plinth-template` directory.
+
+## Step 2: Meet the example project
+
+The template is an ordinary cabal project. Its smart-contract sources live in
+`src/`:
 
 - **`AuctionValidator.hs`** &mdash; a *spending validator* for a simple
   auction. This is the on-chain script that decides whether a transaction is
   allowed to spend the auction's funds.
 - **`AuctionMintingPolicy.hs`** &mdash; a *minting policy* paired with the
   auction, controlling when the associated tokens may be minted.
-- **`Examples.hs`** &mdash; small standalone Plinth snippets.
-- **`Utils.hs`** &mdash; helpers shared across the examples.
+
+Together these make up the `plinth-validators` library. Under `app/` are two
+small programs that turn the compiled validators into CIP-57 blueprints:
+
+- **`GenAuctionValidatorBlueprint.hs`** (the `gen-auction-validator-blueprint`
+  executable)
+- **`GenMintingPolicyBlueprint.hs`** (the `gen-minting-policy-blueprint`
+  executable)
 
 These are ordinary Haskell modules: what makes them Plinth is that
 `uplc-ghc` compiles their Plinth definitions all the way down to Plutus Core.
 
-## Step 2: Compile the contracts
+## Step 3: Compile the contracts
 
-From the root of the repository, run:
-
-```console
-$ ./plinth-test.sh
-```
-
-This builds the example project with `uplc-ghc` and then runs its
-`gen-examples` program, which writes the compiled Plutus Core to disk. The
-first run downloads and builds dependencies, so expect it to take a while.
-
-If you want to start from a clean slate, set `CLEAN=1`:
+Refresh the package index, then build the project with `uplc-ghc` as the
+compiler by passing it to cabal with `-w`:
 
 ```console
-$ CLEAN=1 ./plinth-test.sh
+$ cabal update
+$ cabal build -w /path/to/uplc-ghc
 ```
 
-## Step 3: Look at the Plutus Core
+The first run downloads and builds dependencies, so expect it to take a while.
 
-The compiled output lands in `plinth/test/examples-output/`. Open one of the
-generated files to see real Plutus Core:
+Because the Plinth plugin is built into `uplc-ghc`, no extra plugin
+configuration is required: compiling the validator modules yields Plutus Core in
+addition to the usual GHC outputs.
+
+## Step 4: Look at the Plutus Core
+
+To see the compiled output as a concrete artefact, run one of the blueprint
+generators &mdash; again with `uplc-ghc` as the compiler &mdash; and have it
+write its blueprint to a file:
 
 ```console
-$ cat plinth/test/examples-output/succ.uplc
+$ cabal run -w /path/to/uplc-ghc \
+    gen-auction-validator-blueprint -- auction-validator.json
+$ cat auction-validator.json
 ```
 
-You are looking at the on-chain code that the Cardano ledger would actually
-execute &mdash; produced from Haskell by `uplc-ghc`. The companion file
-`eqCheck.uplc` is generated the same way.
+The resulting `auction-validator.json` is a CIP-57 blueprint. It embeds the
+compiled Plutus Core &mdash; the on-chain code that the Cardano ledger would
+actually execute &mdash; produced from Haskell by `uplc-ghc`, alongside the
+metadata that off-chain tooling uses to interact with the validator.
 
-## Step 4 (optional): Generate the validator blueprints
+## Step 5 (optional): Generate the minting-policy blueprint
 
-The project also ships blueprint generators under `plinth/test/app/`
-(`GenAuctionValidatorBlueprint.hs`, `GenMintingPolicyBlueprint.hs`,
-`GenExamples.hs`). These produce the CIP-57 blueprints that off-chain tooling
-uses to interact with the compiled validators &mdash; a good thread to pull on
-once you are comfortable.
+The companion generator works the same way:
+
+```console
+$ cabal run -w /path/to/uplc-ghc \
+    gen-minting-policy-blueprint -- minting-policy.json
+```
+
+Comparing the two blueprints is a good thread to pull on once you are
+comfortable.
 
 ## Where to go next
 
 - [Use uplc-ghc in a project]({% link how-to/use.md %}) &mdash; point your own
-  project at the compiler instead of the bundled example.
+  project at the compiler instead of the template.
 - [The built-in static plugin]({% link explanation/static-plugin.md %}) &mdash;
   understand what `uplc-ghc` is doing under the hood.
 - [Plinth user guide][plinth] &mdash; learn to write Plinth code of your own.
