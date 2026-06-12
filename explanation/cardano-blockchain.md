@@ -94,6 +94,23 @@ much like a validator, but it is given only a redeemer and the script context
 &mdash; there is no output being spent, so no datum. Its script hash serves as
 the token's **policy id**, the identifier that namespaces the assets it governs.
 
+Spending and minting are the most common, but they are not the only **script
+purposes**. The same machinery &mdash; a script attached through a credential,
+run when a transaction performs the action it guards, and given a redeemer and
+the script context &mdash; also covers:
+
+- **reward withdrawal**: an address's staking credential can be a script, run
+  when staking rewards are withdrawn from it;
+- **certificates**: a script can authorise registering, deregistering, or
+  delegating a stake credential it controls;
+- **governance voting and proposing** (since the Conway era): a script can act
+  as a vote-casting credential, such as a delegate representative or a
+  constitutional-committee member, or as the constitution's "guardrails" that
+  gate proposals like treasury withdrawals and protocol-parameter changes.
+
+Of these, only the spending validator is also handed a datum, because only it is
+tied to a specific output carrying state.
+
 This is where Plinth comes in: it is the language you write these scripts in.
 Plinth code is compiled down to **Plutus Core**, the low-level language the
 Cardano ledger actually executes.
