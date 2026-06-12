@@ -1,0 +1,90 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 560" role="img"
+     aria-label="Plinth compiles Haskell source down to UPLC; everything after the UPLC boundary is shared by any UPLC script.">
+  <style>
+    .zone-label { font: 700 15px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+    .box-text   { font: 600 13px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #1f2d3d; }
+    .sub        { font: 400 11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #5a6b7b; }
+    .caption    { font: italic 400 11px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #5a6b7b; }
+    .divider-label { font: 700 12px -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; fill: #ffffff; }
+    .box  { fill: #ffffff; stroke: #5b7fa6; stroke-width: 1.5; }
+    .pivot { fill: #fff3d6; stroke: #d8a93a; stroke-width: 1.8; }
+    .flow { fill: none; stroke: #5a6b7b; stroke-width: 1.6; }
+  </style>
+
+  <defs>
+    <marker id="arrow" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0,0 L10,5 L0,10 z" fill="#5a6b7b"/>
+    </marker>
+  </defs>
+
+  <!-- Plinth-specific zone -->
+  <rect x="20" y="24" width="860" height="196" rx="10" fill="#eaf2fb" stroke="#b9d4f1"/>
+  <text x="36" y="48" class="zone-label" fill="#2c5d99">Plinth-specific — your source language's job</text>
+
+  <!-- compile pipeline boxes -->
+  <g>
+    <rect class="box" x="40"  y="108" width="150" height="64" rx="6"/>
+    <text class="box-text" x="115" y="135" text-anchor="middle">Haskell source</text>
+    <text class="sub"      x="115" y="152" text-anchor="middle">(Plinth)</text>
+
+    <rect class="box" x="210" y="108" width="150" height="64" rx="6"/>
+    <text class="box-text" x="285" y="144" text-anchor="middle">GHC Core</text>
+
+    <rect class="box" x="380" y="108" width="150" height="64" rx="6"/>
+    <text class="box-text" x="455" y="135" text-anchor="middle">PIR</text>
+    <text class="sub"      x="455" y="152" text-anchor="middle">(Plutus IR)</text>
+
+    <rect class="box" x="550" y="108" width="150" height="64" rx="6"/>
+    <text class="box-text" x="625" y="135" text-anchor="middle">Typed</text>
+    <text class="box-text" x="625" y="152" text-anchor="middle">Plutus Core</text>
+
+    <rect class="pivot" x="720" y="108" width="150" height="64" rx="6"/>
+    <text class="box-text" x="795" y="144" text-anchor="middle">UPLC</text>
+  </g>
+
+  <!-- pipeline arrows -->
+  <line class="flow" x1="190" y1="140" x2="208" y2="140" marker-end="url(#arrow)"/>
+  <line class="flow" x1="360" y1="140" x2="378" y2="140" marker-end="url(#arrow)"/>
+  <line class="flow" x1="530" y1="140" x2="548" y2="140" marker-end="url(#arrow)"/>
+  <line class="flow" x1="700" y1="140" x2="718" y2="140" marker-end="url(#arrow)"/>
+
+  <text x="40" y="206" class="caption">GHC, with the Plinth plugin, compiles the marked definitions down through these stages.</text>
+
+  <!-- UPLC boundary divider -->
+  <line x1="40" y1="250" x2="860" y2="250" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="7 5"/>
+  <rect x="390" y="237" width="120" height="26" rx="13" fill="#c0392b"/>
+  <text x="450" y="254" class="divider-label" text-anchor="middle">UPLC boundary</text>
+
+  <!-- Any-UPLC zone -->
+  <rect x="20" y="280" width="860" height="260" rx="10" fill="#eaf7ee" stroke="#b9e3c6"/>
+  <text x="36" y="304" class="zone-label" fill="#2f8f55">Any UPLC script — shared Cardano infrastructure</text>
+
+  <!-- serialised script -->
+  <rect class="pivot" x="330" y="330" width="240" height="60" rx="6"/>
+  <text class="box-text" x="450" y="356" text-anchor="middle">Serialised script</text>
+  <text class="sub"      x="450" y="373" text-anchor="middle">(flat, then CBOR)</text>
+
+  <!-- UPLC -> serialised script, crossing the boundary -->
+  <line class="flow" x1="795" y1="172" x2="452" y2="328" marker-end="url(#arrow)"/>
+  <text x="710" y="222" class="caption">serialise</text>
+
+  <!-- fan-out -->
+  <rect class="box" x="80"  y="446" width="200" height="62" rx="6"/>
+  <text class="box-text" x="180" y="473" text-anchor="middle">Blueprint</text>
+  <text class="sub"      x="180" y="490" text-anchor="middle">(CIP-57 JSON)</text>
+
+  <rect class="box" x="350" y="446" width="200" height="62" rx="6"/>
+  <text class="box-text" x="450" y="473" text-anchor="middle">Script hash</text>
+  <text class="sub"      x="450" y="490" text-anchor="middle">-&gt; script address</text>
+
+  <rect class="box" x="620" y="446" width="200" height="62" rx="6"/>
+  <text class="box-text" x="720" y="473" text-anchor="middle">Transaction</text>
+  <text class="sub"      x="720" y="490" text-anchor="middle">(inline / reference script)</text>
+
+  <path class="flow" d="M400,390 L180,444" marker-end="url(#arrow)"/>
+  <line class="flow" x1="450" y1="390" x2="450" y2="444" marker-end="url(#arrow)"/>
+  <path class="flow" d="M500,390 L720,444" marker-end="url(#arrow)"/>
+
+  <text x="180" y="528" class="caption" text-anchor="middle">off-chain tooling</text>
+  <text x="585" y="528" class="caption" text-anchor="middle">on-chain</text>
+</svg>

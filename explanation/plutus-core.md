@@ -61,3 +61,6 @@ transaction will cost, and whether it will succeed, in advance.
 
 - [The Cardano blockchain]({% link explanation/cardano-blockchain.md %}) &mdash;
   the ledger model these scripts run against.
+- [From Plinth to the chain]({% link explanation/from-plinth-to-the-chain.md %})
+  &mdash; how Plinth source becomes this UPLC, and how the UPLC reaches a
+  transaction.

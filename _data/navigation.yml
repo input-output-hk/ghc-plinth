@@ -49,6 +49,8 @@ docs:
         url: /explanation/cardano-blockchain/
       - title: "Plutus Core and the CEK machine"
         url: /explanation/plutus-core/
+      - title: "From Plinth to the chain"
+        url: /explanation/from-plinth-to-the-chain/
       - title: Languages for smart contracts
         url: /explanation/languages/
       - title: About Plinth and this fork
