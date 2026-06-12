@@ -101,16 +101,3 @@ $ cabal build -w /path/to/uplc-ghc
 Either way, compiling a module that defines Plinth code yields Plutus Core in
 addition to the usual GHC outputs &mdash; no extra plugin configuration is
 required, because the Plinth plugin is built into the compiler.
-
-## Start from the project template
-
-For a ready-made project layout, clone the
-[Plinth project template][plinth-template] and build it with `uplc-ghc` as
-above. For how to write and structure Plinth code, consult the
-[Plinth user guide][plinth].
-
-If you would rather see a worked example before starting your own project, walk
-through [Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %}).
-
-[plinth]: https://plutus.cardano.intersectmbo.org/docs/
-[plinth-template]: https://github.com/IntersectMBO/plinth-template
