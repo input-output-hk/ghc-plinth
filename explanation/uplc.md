@@ -42,13 +42,33 @@ A small complete program that adds two integers:
 )
 ```
 
-Two things follow from the language being *untyped*. First, there is nothing to
-stop a nonsensical term such as applying an integer as if it were a function;
-such a term simply evaluates to `(error)`. Second, **polymorphic builtins are
-instantiated with `force`** rather than with a type argument. Operations like
-`ifThenElse` are returned suspended and must be forced before use &mdash; this is
-how the untyped language stands in for the type instantiation that a typed
-language would do.
+Two things follow from the language being *untyped*. First, nothing stops a
+nonsensical term such as applying an integer as if it were a function; the
+machine simply evaluates it to `(error)` when it gets there.
+
+Second, this is what `force` and `delay` are really for. The typed languages
+that compile to UPLC are **polymorphic**: a function like `ifThenElse` has the
+type `forall a. bool -> a -> a -> a`, and before you can use it you must pick the
+concrete type `a` &mdash; in a typed language, by a **type application** (think
+of it as passing the type as an extra argument). UPLC has no types, so there is
+nothing to pass. But the type applications cannot simply be *deleted* either,
+because that would change *when* subterms evaluate. So type erasure rewrites them
+into ordinary terms: every type abstraction becomes a `(delay ...)`, and every
+type application becomes a `(force ...)`.
+
+The upshot is that **a polymorphic builtin is instantiated by forcing it** &mdash;
+once for each type argument it would have taken &mdash; before it is applied to
+its real arguments. `ifThenElse` has a single type variable, so it is forced
+once and then applied to its condition and two branches:
+
+```
+[ [ [ (force (builtin ifThenElse)) <cond> ] <then> ] <else> ]
+```
+
+That `force` is the erased type instantiation, not a piece of laziness. It is
+also why compiled UPLC is dotted with `force` and `delay` that have nothing to
+do with suspending computation: many of them are just where the types used to
+be.
 
 ## Built-in types
 
@@ -116,24 +136,27 @@ There are *two* version numbers in play, and they are easy to conflate:
 
 On top of that, individual builtins are switched on at specific Cardano **hard
 forks** (protocol versions), and the same builtin can become available to
-different ledger languages at different times. The introductions, for the
-current `PlutusV3` language, run:
+different ledger languages at different times. For the current `PlutusV3`
+language the introductions run:
 
-| Hard fork (year)   | Introduced for PlutusV3 |
-|--------------------|--------------------------|
-| Chang (2024)       | UPLC `1.1.0` (`constr`/`case`); BLS12-381 G1/G2 and pairing ops, `keccak_256`, `blake2b_224`; `integerToByteString`, `byteStringToInteger`; plus the original set and `serialiseData`, `verifyEcdsaSecp256k1Signature`, `verifySchnorrSecp256k1Signature` |
-| Plomin (2025)      | logical/bitwise byte-string ops (`andByteString`, `orByteString`, `xorByteString`, `complementByteString`, `shiftByteString`, `rotateByteString`, `readBit`, `writeBits`, `replicateByte`, `countSetBits`, `findFirstSetBit`); `ripemd_160` |
-| van Rossem (2025)  | `expModInteger`, `dropList`, array ops (`lengthOfArray`, `listToArray`, `indexArray`), BLS multi-scalar multiplication, and `Value` operations |
+| Hard fork (protocol version) | Introduced for PlutusV3 |
+|------------------------------|--------------------------|
+| Chang &mdash; 2024 (PV 9)    | UPLC `1.1.0` (`constr`/`case`); BLS12-381 G1/G2 and pairing ops, `keccak_256`, `blake2b_224`; `integerToByteString`, `byteStringToInteger`; plus the original set and `serialiseData`, `verifyEcdsaSecp256k1Signature`, `verifySchnorrSecp256k1Signature` |
+| Plomin &mdash; 2025 (PV 10)  | logical/bitwise byte-string ops (`andByteString`, `orByteString`, `xorByteString`, `complementByteString`, `shiftByteString`, `rotateByteString`, `readBit`, `writeBits`, `replicateByte`, `countSetBits`, `findFirstSetBit`); `ripemd_160` |
+| van Rossem &mdash; upcoming (PV 11) | *(planned)* `expModInteger`, `dropList`, array ops (`lengthOfArray`, `listToArray`, `indexArray`), BLS multi-scalar multiplication, and `Value` operations |
 
-The older ledger languages started smaller and caught up later:
+The older ledger languages started smaller:
 
 - **PlutusV1** (Alonzo, 2021) launched with the original builtin set and UPLC
   `1.0.0` only.
 - **PlutusV2** (Vasil, 2022) added `serialiseData`, and at the Valentine hard
   fork (2023) the two Secp256k1 signature builtins.
-- The **van Rossem** hard fork retroactively brought UPLC `1.1.0` and most of the
-  newer builtins to `PlutusV1` and `PlutusV2` as well, so the three languages now
-  differ far more in their script context than in their builtins.
+
+The **van Rossem** hard fork (protocol version 11, targeted for 2026 and not yet
+live at the time of writing) is set to *unify* the builtins: it makes the full
+set available across `PlutusV1`, `PlutusV2`, and `PlutusV3` and brings UPLC
+`1.1.0` to all three. After it, the languages will differ chiefly in their
+script context rather than in which builtins they offer.
 
 A few of these have specific motivations worth noting: `keccak_256` and
 `ripemd_160` provide Ethereum- and Bitcoin-compatible hashing; the BLS12-381
