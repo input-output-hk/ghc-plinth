@@ -20,6 +20,8 @@ organising docs by what you need from them:
 - **[How-to guides]({% link how-to/index.md %})** &mdash; *task-oriented.*
   Practical recipes for a specific job: install the compiler, use it in a
   project, and generate a blueprint.
+- **[Reference]({% link reference/index.md %})** &mdash; *information-oriented.*
+  Dry facts to look up.
 - **[Explanation]({% link explanation/index.md %})** &mdash;
   *understanding-oriented.* Background and discussion: what Plinth is and how
   this fork works.
