@@ -106,8 +106,9 @@ version:       0.1.0.0
 build-type:    Simple
 
 executable plinth-add
-  main-is:          Main.hs
-  default-language: Haskell2010
+  main-is:            Main.hs
+  default-language:   Haskell2010
+  default-extensions: DataKinds
   build-depends:
     , base
     , text
