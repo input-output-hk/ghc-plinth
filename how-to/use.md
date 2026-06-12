@@ -41,16 +41,15 @@ are neither bundled with the compiler nor taken from CHaP. Pull them from the
 source-repository-package
   type: git
   location: https://github.com/hsyl20/ghc-plinth-plutus
-  tag: 71c34793c1d034d4bfe8c92b51828dc1d38aa04c
+  tag: 33decd91baf18e76927ffd97a6c3d0ab571bbdb6
   subdir: plutus-tx
           plutus-core
           plutus-tx-plugin
 ```
 
-The `tag` must match your `uplc-ghc`: the built-in plugin only replaces the
-compiled-code placeholder for code built against the *same* fork, so the
-same-numbered `plutus-tx` on CHaP will not work. Use the plutus commit your
-`uplc-ghc` was built from.
+Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler
+and these libraries are released together as a matched set, built from the same
+commit.
 
 In addition you may want to add the following `source-repository-package` blocks
 that build the C crypto libraries used by Cardano (`libsodium`, `secp256k1`,

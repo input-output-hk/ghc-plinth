@@ -51,7 +51,7 @@ index-state:
 source-repository-package
   type: git
   location: https://github.com/hsyl20/ghc-plinth-plutus
-  tag: 71c34793c1d034d4bfe8c92b51828dc1d38aa04c
+  tag: 33decd91baf18e76927ffd97a6c3d0ab571bbdb6
   subdir: plutus-tx
           plutus-core
           plutus-tx-plugin
@@ -98,11 +98,10 @@ package sodium-clib
   configure-options: --enable-pie=no
 ```
 
-The `ghc-plinth-plutus` `tag` must match your `uplc-ghc`: the plugin built into
-the compiler only replaces the compiled-code placeholder for code built against
-the *same* fork, so the same-numbered `plutus-tx` on CHaP will not do. The commit
-above matches this guide's compiler; for a different `uplc-ghc`, use the plutus
-commit it was built from.
+Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler and
+these libraries are released together as a matched set, built from the same
+commit. The commit above matches this guide's compiler; for a different
+`uplc-ghc`, use the plutus commit it was built from.
 
 **Not for production.** The vendored crypto C libraries pulled in by the
 `*-clib` `source-repository-package`s above have not been audited. Use this
