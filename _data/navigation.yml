@@ -49,6 +49,8 @@ docs:
         url: /explanation/cardano-blockchain/
       - title: "Plutus Core and the CEK machine"
         url: /explanation/plutus-core/
+      - title: "The UPLC language"
+        url: /explanation/uplc/
       - title: "From Plinth to the chain"
         url: /explanation/from-plinth-to-the-chain/
       - title: "Contract blueprints (CIP-57)"

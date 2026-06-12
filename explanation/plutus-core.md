@@ -59,6 +59,8 @@ transaction will cost, and whether it will succeed, in advance.
 
 ## Further reading
 
+- [The UPLC language]({% link explanation/uplc.md %}) &mdash; what UPLC programs
+  look like, the built-in functions they use, and how the language has grown.
 - [The Cardano blockchain]({% link explanation/cardano-blockchain.md %}) &mdash;
   the ledger model these scripts run against.
 - [From Plinth to the chain]({% link explanation/from-plinth-to-the-chain.md %})

@@ -8,6 +8,7 @@ your understanding rather than get something done.
 
 - [The Cardano blockchain]({% link explanation/cardano-blockchain.md %})
 - [How smart contracts run: Plutus Core and the CEK machine]({% link explanation/plutus-core.md %})
+- [The UPLC language: terms, builtins, and versions]({% link explanation/uplc.md %})
 - [From Plinth to the chain: compilation, blueprints, and transactions]({% link explanation/from-plinth-to-the-chain.md %})
 - [Contract blueprints (CIP-57)]({% link explanation/blueprints.md %})
 - [Languages for smart contracts]({% link explanation/languages.md %})
