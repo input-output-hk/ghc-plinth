@@ -57,6 +57,36 @@ local (see the [EUTXO model]({% link explanation/cardano-blockchain.md %})), the
 exact cost can be computed off-chain before submission &mdash; so you know what a
 transaction will cost, and whether it will succeed, in advance.
 
+## What the result means
+
+The CEK machine reduces a script to a value, but **the ledger never looks at that
+value.** A script is run only to find out whether its evaluation *succeeds*, and
+the verdict is binary:
+
+- if the program terminates **without error and within budget**, the script
+  **passes** &mdash; whatever value it produced (by convention, unit) is simply
+  discarded;
+- if it reaches `(error)`, fails because the term is malformed, or exceeds its
+  execution budget, the script **fails**.
+
+A validator therefore does not *return* its decision as data; it *signals* it by
+either finishing or erroring. There is no boolean for the ledger to read. (A
+Plinth validator written to return `Bool` is compiled through a wrapper that
+turns `False` into an `(error)` before the code reaches the ledger, precisely so
+it fits this succeed-or-fail contract.)
+
+A transaction's script validation succeeds only if **every** script it triggers
+passes, and how a failure is handled is worth knowing:
+
+- A **phase-1** failure &mdash; a malformed transaction, bad signatures,
+  inconsistent fees &mdash; is rejected before any script runs and never reaches
+  the chain.
+- A **phase-2** failure &mdash; a script that errors or runs out of budget
+  &mdash; is still **recorded on-chain as a failed transaction**: it produces
+  none of its intended outputs, but its **collateral** inputs are forfeited to
+  pay for the validation work. That forfeiture is the deterrent against
+  submitting transactions whose scripts fail.
+
 ## Further reading
 
 - [The UPLC language]({% link explanation/uplc.md %}) &mdash; what UPLC programs
