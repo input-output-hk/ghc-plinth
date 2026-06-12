@@ -8,4 +8,3 @@ shows the steps to get one specific job done.
 - [Install Plinth standalone compiler]({% link how-to/build.md %})
 - [Use uplc-ghc in a project]({% link how-to/use.md %})
 - [Generate a blueprint]({% link how-to/generate-blueprint.md %})
-- [Test and benchmark the compiler]({% link how-to/test.md %})

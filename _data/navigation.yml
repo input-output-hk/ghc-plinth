@@ -31,8 +31,6 @@ docs:
         url: /how-to/use/
       - title: Generate a blueprint
         url: /how-to/generate-blueprint/
-      - title: Test and benchmark the compiler
-        url: /how-to/test/
 
   - title: Reference
     url: /reference/

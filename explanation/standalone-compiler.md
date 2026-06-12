@@ -43,8 +43,8 @@ GHC, brings several benefits:
   GHC compiles the surrounding code (optimisation passes, inlining, and so on).
   Pinning the plugin to a specific GHC build keeps compiler and plugin in
   lockstep, which makes the generated Plutus Core reproducible and lets the whole
-  thing be validated as a single unit (see
-  [Test and benchmark the compiler]({% link how-to/test.md %})).
+  thing be validated as a single unit (see the test and benchmark scripts in
+  [Install Plinth standalone compiler]({% link how-to/build.md %}#test-and-benchmark)).
 
 ## Further reading
 
