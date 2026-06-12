@@ -25,7 +25,7 @@ docs:
   - title: How-to guides
     url: /how-to/
     children:
-      - title: Build the compiler from source
+      - title: Install Plinth standalone compiler
         url: /how-to/build/
       - title: Use uplc-ghc in a project
         url: /how-to/use/

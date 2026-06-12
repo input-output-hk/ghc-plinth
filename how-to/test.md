@@ -3,7 +3,7 @@ title: Test and benchmark the compiler
 permalink: /how-to/test/
 ---
 Both scripts below require a built `uplc-ghc` (see
-[Build the compiler from source]({% link how-to/build.md %})).
+[Install Plinth standalone compiler]({% link how-to/build.md %})).
 
 ## Run the example project tests
 

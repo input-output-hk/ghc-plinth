@@ -12,8 +12,8 @@ You do not need to write any code: the example ships with the template project.
 ## Before you start
 
 You need a built `uplc-ghc`. If you have not built it yet, follow
-[Build the compiler from source]({% link how-to/build.md %}) first &mdash; this
-tutorial waits for you here. Note where the `uplc-ghc` binary ended up; you will
+[Install Plinth standalone compiler]({% link how-to/build.md %}) first &mdash;
+this tutorial waits for you here. Note where the `uplc-ghc` binary ended up; you will
 point cabal at it below. Throughout this tutorial, replace `/path/to/uplc-ghc`
 with the actual path to your `uplc-ghc`.
 
