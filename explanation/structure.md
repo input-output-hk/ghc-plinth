@@ -25,7 +25,7 @@ The single tweak is the compiler. Instead of stock GHC you build with
 
 ```
 with-compiler: /path/to/uplc-ghc
-packages: ./.
+packages: .
 ```
 
 This is the persistent equivalent of passing `cabal -w /path/to/uplc-ghc` on the
