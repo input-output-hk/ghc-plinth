@@ -85,9 +85,10 @@ setup for learning and experimentation only &mdash; never for contracts that
 handle real funds.
 {:.warning}
 
-Then build as usual:
+Then refresh the package index and build:
 
 ```console
+$ cabal update
 $ cabal build
 ```
 
