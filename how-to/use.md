@@ -7,15 +7,30 @@ static plugin. Use it as the compiler for a Plinth project.
 
 ## Point cabal at uplc-ghc
 
-Pass `uplc-ghc` to cabal with `-w`:
+The recommended way is to set the compiler once in `cabal.project`, so every
+cabal command in the project uses it:
+
+```
+with-compiler: _build/stage1/bin/uplc-ghc
+packages: .
+```
+
+Then build as usual:
+
+```console
+$ cabal build
+```
+
+Alternatively, you can pass `uplc-ghc` per command with `-w` &mdash; handy for a
+quick try without editing `cabal.project`:
 
 ```console
 $ cabal build -w _build/stage1/bin/uplc-ghc
 ```
 
-Compiling a module that defines Plinth code then yields Plutus Core in addition
-to the usual GHC outputs &mdash; no extra plugin configuration is required,
-because the Plinth plugin is built into the compiler.
+Either way, compiling a module that defines Plinth code yields Plutus Core in
+addition to the usual GHC outputs &mdash; no extra plugin configuration is
+required, because the Plinth plugin is built into the compiler.
 
 ## Start from the project template
 
