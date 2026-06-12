@@ -42,33 +42,86 @@ A small complete program that adds two integers:
 )
 ```
 
-Two things follow from the language being *untyped*. First, nothing stops a
-nonsensical term such as applying an integer as if it were a function; the
-machine simply evaluates it to `(error)` when it gets there.
+Because the language is *untyped*, nothing stops a nonsensical term such as
+applying an integer as if it were a function; the machine simply evaluates such
+a term to `(error)` when it reaches it. The `delay` and `force` forms above look
+odd in isolation; they are tied to *how* UPLC evaluates, which the next section
+explains.
 
-Second, this is what `force` and `delay` are really for. The typed languages
-that compile to UPLC are **polymorphic**: a function like `ifThenElse` has the
-type `forall a. bool -> a -> a -> a`, and before you can use it you must pick the
-concrete type `a` &mdash; in a typed language, by a **type application** (think
-of it as passing the type as an extra argument). UPLC has no types, so there is
-nothing to pass. But the type applications cannot simply be *deleted* either,
-because that would change *when* subterms evaluate. So type erasure rewrites them
-into ordinary terms: every type abstraction becomes a `(delay ...)`, and every
-type application becomes a `(force ...)`.
+## Evaluation order: strictness, `delay`, and `force`
 
-The upshot is that **a polymorphic builtin is instantiated by forcing it** &mdash;
-once for each type argument it would have taken &mdash; before it is applied to
-its real arguments. `ifThenElse` has a single type variable, so it is forced
-once and then applied to its condition and two branches:
+UPLC is **strict** &mdash; call-by-value. When the [CEK
+machine]({% link explanation/plutus-core.md %}) evaluates an application
+`[ f x ]`, it reduces `f` to a function and then reduces `x` to a *value* before
+performing the call; the argument is always evaluated first. The same holds for
+the fields of a `constr` and the operands of a builtin: a subterm is evaluated as
+soon as it is reached. Only a few forms are values in their own right and are
+*not* evaluated until used &mdash; a `(lam ...)`, a `(con ...)`, a
+partially-applied `(builtin ...)`, and, crucially, a `(delay ...)`.
+
+Strictness has a sharp consequence: there is no built-in laziness. If you express
+a conditional by passing both outcomes as ordinary arguments, *both* are
+evaluated before the conditional can choose &mdash; wasted work at best, and an
+outright failure if the branch not taken contains an `(error)`. UPLC's answer is
+to make suspension explicit:
+
+- `(delay M)` packages `M` as a value **without** evaluating it &mdash; a thunk.
+- `(force t)` runs a thunk: it resumes evaluation of the `M` inside a `delay`.
+
+So `force (delay M)` evaluates `M`, and that round trip is the only way to defer
+a computation and later resume it.
+
+### Two jobs, one pair of operators
+
+`delay` and `force` end up doing two distinct things, which is why compiled UPLC
+is so full of them:
+
+1. **Laziness.** Wrap a term in `delay` to stop strict evaluation from running it
+   too early, and `force` it at the point you actually want it.
+2. **Type instantiation.** The typed languages that compile to UPLC are
+   *polymorphic*: a function like `ifThenElse` has type
+   `forall a. bool -> a -> a -> a`, and before use you must pick the concrete
+   type `a` &mdash; in a typed language, by a **type application**. UPLC has no
+   types, so there is nothing to pass; but the type applications cannot simply be
+   deleted, because that would change *when* subterms evaluate. So type erasure
+   rewrites every type abstraction to a `(delay ...)` and every type application
+   to a `(force ...)`. A polymorphic builtin is therefore *instantiated by forcing
+   it*.
+
+The standard conditional shows both jobs at once. `ifThenElse` is polymorphic, so
+it is forced once to instantiate it; and because evaluation is strict, the two
+branches are wrapped in `delay` so that only the chosen one runs, after which the
+result is forced:
 
 ```
-[ [ [ (force (builtin ifThenElse)) <cond> ] <then> ] <else> ]
+(force
+  [ [ [ (force (builtin ifThenElse)) <cond> ]
+      (delay <then>) ]
+    (delay <else>) ])
 ```
 
-That `force` is the erased type instantiation, not a piece of laziness. It is
-also why compiled UPLC is dotted with `force` and `delay` that have nothing to
-do with suspending computation: many of them are just where the types used to
-be.
+The inner `(force (builtin ifThenElse))` instantiates the builtin (job 2); the
+two `(delay ...)` keep both branches unevaluated (job 1); `ifThenElse` returns
+whichever thunk matches `<cond>`; and the outer `(force ...)` runs just that one.
+
+### The builtin checklist
+
+Because forces are real evaluation steps, the machine is exact about how many it
+expects. Every builtin carries a fixed sequence of steps, read off its type: each
+`->` is a "supply an argument" step, each `forall` is a "force me" step.
+
+```
+addInteger : integer -> integer -> integer    steps: arg, arg
+ifThenElse : forall a. bool -> a -> a -> a     steps: force, arg, arg, arg
+```
+
+The machine walks this sequence and expects exactly the next item. Supply an
+argument where a `force` is due (or force where an argument is due) and the
+builtin application is malformed: evaluation raises an error and the script
+fails. Stop early &mdash; never completing the sequence &mdash; and you are left
+with an unsaturated builtin value that simply never computes. Either way, a
+missing or stray `force` is never silently ignored: it is the erased type
+instantiation, and the machine counts every one.
 
 ## Built-in types
 
