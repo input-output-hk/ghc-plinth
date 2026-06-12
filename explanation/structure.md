@@ -37,8 +37,10 @@ The defining structural feature of a Plinth project is that the same package,
 built by the same compiler, holds two kinds of code bound for two different
 places:
 
-- **On-chain code** &mdash; the validator and minting-policy logic, written in
-  the Plinth subset, that ends up as [UPLC]({% link explanation/uplc.md %}) on the
+- **On-chain code** &mdash; the validator and
+  [minting-policy]({% link explanation/cardano-blockchain.md %}) logic (the
+  scripts that guard spending an output and minting a token), written in the
+  Plinth subset, that ends up as [UPLC]({% link explanation/uplc.md %}) on the
   ledger.
 - **Off-chain code** &mdash; ordinary Haskell that prepares, inspects,
   serialises, and deploys that on-chain code: blueprint generators, tests, and

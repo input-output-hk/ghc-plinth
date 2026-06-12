@@ -86,7 +86,15 @@ does not "move funds" itself; it decides whether a *proposed* transaction is
 allowed to. This keeps validation local and deterministic, exactly as the EUTXO
 model requires.
 
-This is where Plinth comes in: it is the language you write these validators in.
+Spending is not the only thing scripts guard. Cardano also has **native
+tokens** &mdash; assets other than ada &mdash; and a transaction that *mints*
+(creates) or *burns* (destroys) them must satisfy a **minting policy**: a script
+that decides whether that minting or burning is allowed. A minting policy runs
+much like a validator, but it is given only a redeemer and the script context
+&mdash; there is no output being spent, so no datum. Its script hash serves as
+the token's **policy id**, the identifier that namespaces the assets it governs.
+
+This is where Plinth comes in: it is the language you write these scripts in.
 Plinth code is compiled down to **Plutus Core**, the low-level language the
 Cardano ledger actually executes.
 
