@@ -88,6 +88,12 @@ package sodium-clib
   configure-options: --enable-pie=no
 ```
 
+**Not for production.** The vendored crypto C libraries pulled in by the
+`*-clib` `source-repository-package`s above have not been audited. Use this
+setup for learning and experimentation only &mdash; never for contracts that
+handle real funds.
+{:.warning}
+
 **`plinth-add.cabal`** describes the single executable. The `ghc-options` are
 the flags Plinth needs to compile predictably (turning off optimisations that
 would reshape the code before the plugin sees it) and to select the Plutus Core
