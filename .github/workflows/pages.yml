@@ -1,0 +1,62 @@
+name: Build and deploy docs to GitHub Pages
+
+# Build the site with our own Gemfile (Jekyll 4.4 + jekyll-remote-theme)
+# instead of relying on GitHub Pages' built-in legacy build (Jekyll 3.x,
+# safe mode), which does not apply the remote TeXt theme correctly.
+#
+# NOTE: this only takes effect once the repo's Pages source is set to
+# "GitHub Actions" (Settings -> Pages -> Build and deployment -> Source).
+
+on:
+  push:
+    branches:
+      - gh-pages
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Allow one concurrent deployment; let in-progress runs finish.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.4"
+          bundler-cache: true
+
+      - name: Setup Pages
+        id: pages
+        uses: actions/configure-pages@v5
+
+      - name: Build with Jekyll
+        # configure-pages sets the correct base_path for project sites
+        # (e.g. /ghc-plinth) and for preview deployments.
+        run: bundle exec jekyll build --baseurl "${{ steps.pages.outputs.base_path }}"
+        env:
+          JEKYLL_ENV: production
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,7 +1,8 @@
 source "https://rubygems.org"
 
-# Local preview only. GitHub Pages builds the published site itself and
-# ignores this file; it exists so `bundle exec jekyll serve` works locally.
+# Used both for local preview (`bundle exec jekyll serve`) and by the
+# GitHub Actions workflow (.github/workflows/pages.yml), so the published
+# site is built with the same Jekyll 4.x + remote-theme toolchain as local.
 gem "jekyll", "~> 4.4"
 gem "jekyll-remote-theme"
 
