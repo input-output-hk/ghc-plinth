@@ -1,12 +1,7 @@
 ---
-layout: default
 title: The built-in static plugin
-parent: Explanation
-nav_order: 5
+permalink: /explanation/static-plugin/
 ---
-
-# The built-in static plugin
-
 GHC supports two ways of supplying a Core plugin:
 
 - **Dynamic plugins** are ordinary packages named on the command line (or in a

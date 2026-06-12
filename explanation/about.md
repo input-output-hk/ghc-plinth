@@ -1,12 +1,7 @@
 ---
-layout: default
 title: About Plinth and this fork
-parent: Explanation
-nav_order: 4
+permalink: /explanation/about/
 ---
-
-# About Plinth and this fork
-
 [Plinth][plinth] (formerly known as Plutus Tx) is a subset of Haskell used to
 write smart contracts for the [Cardano][cardano] blockchain. Plinth code is
 compiled to **Plutus Core**, the low-level language the Cardano ledger

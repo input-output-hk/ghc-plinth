@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Use uplc-ghc in a project
-parent: How-to guides
-nav_order: 2
+permalink: /how-to/use/
 ---
-
-# Use uplc-ghc in a project
-
 The build produces `uplc-ghc`, a GHC that ships the Plinth plugin as a built-in
 static plugin. Use it as the compiler for a Plinth project.
 

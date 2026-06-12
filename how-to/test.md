@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Test and benchmark the compiler
-parent: How-to guides
-nav_order: 3
+permalink: /how-to/test/
 ---
-
-# Test and benchmark the compiler
-
 Both scripts below require a built `uplc-ghc` (see
 [Build the compiler from source]({% link how-to/build.md %})).
 

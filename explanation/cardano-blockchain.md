@@ -1,12 +1,7 @@
 ---
-layout: default
 title: The Cardano blockchain
-parent: Explanation
-nav_order: 1
+permalink: /explanation/cardano-blockchain/
 ---
-
-# The Cardano blockchain
-
 This page gives the background needed to understand *why* Plinth exists. It
 explains what a distributed ledger is, what makes [Cardano][cardano]'s ledger
 distinctive (the extended UTXO model), and where smart contracts fit in. No

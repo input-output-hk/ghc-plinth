@@ -1,0 +1,8 @@
+# Jekyll build output
+_site/
+
+# Local preview (bundler); GitHub Pages builds the site itself
+.bundle/
+vendor/
+.jekyll-cache/
+.jekyll-metadata

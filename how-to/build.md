@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Build the compiler from source
-parent: How-to guides
-nav_order: 1
+permalink: /how-to/build/
 ---
-
-# Build the compiler from source
-
 This guide produces `uplc-ghc`, the Plinth-enabled compiler. It assumes the
 [prerequisites]({% link reference/prerequisites.md %}) are on your `PATH`.
 

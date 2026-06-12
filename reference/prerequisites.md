@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Prerequisites
-parent: Reference
-nav_order: 1
+permalink: /reference/prerequisites/
 ---
-
-# Prerequisites
-
 `plinth-build.sh` expects the following tools on `PATH`:
 
 | Tool      | Requirement                                          |

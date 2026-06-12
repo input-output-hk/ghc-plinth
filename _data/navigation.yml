@@ -1,0 +1,57 @@
+# Top navigation bar
+header:
+  - title: Tutorials
+    url: /tutorials/
+  - title: How-to
+    url: /how-to/
+  - title: Reference
+    url: /reference/
+  - title: Explanation
+    url: /explanation/
+  - title: GitHub
+    url: https://github.com/input-output-hk/ghc-plinth
+
+# Left sidebar shown on every docs page (referenced as `sidebar: nav: docs`)
+docs:
+  - title: Home
+    url: /
+
+  - title: Tutorials
+    url: /tutorials/
+    children:
+      - title: Your first smart contract with Plinth
+        url: /tutorials/first-smart-contract/
+
+  - title: How-to guides
+    url: /how-to/
+    children:
+      - title: Build the compiler from source
+        url: /how-to/build/
+      - title: Use uplc-ghc in a project
+        url: /how-to/use/
+      - title: Test and benchmark the compiler
+        url: /how-to/test/
+
+  - title: Reference
+    url: /reference/
+    children:
+      - title: Prerequisites
+        url: /reference/prerequisites/
+      - title: Environment variables
+        url: /reference/environment-variables/
+      - title: Build outputs
+        url: /reference/build-outputs/
+
+  - title: Explanation
+    url: /explanation/
+    children:
+      - title: The Cardano blockchain
+        url: /explanation/cardano-blockchain/
+      - title: "Plutus Core and the CEK machine"
+        url: /explanation/plutus-core/
+      - title: Languages for smart contracts
+        url: /explanation/languages/
+      - title: About Plinth and this fork
+        url: /explanation/about/
+      - title: The built-in static plugin
+        url: /explanation/static-plugin/

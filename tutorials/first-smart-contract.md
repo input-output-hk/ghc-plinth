@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Your first smart contract with Plinth
-parent: Tutorials
-nav_order: 1
+permalink: /tutorials/first-smart-contract/
 ---
-
-# Your first smart contract with Plinth
-
 In this tutorial you will compile a real smart contract to Plutus Core using
 the Plinth compiler, and look at the result. By the end you will have cloned the
 [Plinth project template][plinth-template], built it with `uplc-ghc`, and

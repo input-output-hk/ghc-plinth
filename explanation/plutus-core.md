@@ -1,12 +1,7 @@
 ---
-layout: default
-title: How smart contracts run: Plutus Core and the CEK machine
-parent: Explanation
-nav_order: 2
+title: "How smart contracts run: Plutus Core and the CEK machine"
+permalink: /explanation/plutus-core/
 ---
-
-# How smart contracts run: Plutus Core and the CEK machine
-
 [The Cardano blockchain]({% link explanation/cardano-blockchain.md %}) explained
 that a smart contract on Cardano is a validator script. This page explains what
 those scripts actually *are* at the lowest level, and how the ledger *executes*

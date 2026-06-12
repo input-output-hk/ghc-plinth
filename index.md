@@ -1,11 +1,7 @@
 ---
-layout: default
-title: Home
-nav_order: 1
+title: Overview
+permalink: /
 ---
-
-# Plinth Standalone Compiler
-
 A fork of [GHC](https://www.haskell.org/ghc/) that embeds the
 [Plinth][plinth] compiler, used to write smart contracts for the
 [Cardano][cardano] blockchain. Plinth (formerly Plutus Tx) is a subset of

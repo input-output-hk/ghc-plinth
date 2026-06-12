@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Build outputs
-parent: Reference
-nav_order: 3
+permalink: /reference/build-outputs/
 ---
-
-# Build outputs
-
 What `plinth-build.sh` produces.
 
 ## The compiler

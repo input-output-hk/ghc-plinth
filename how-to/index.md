@@ -1,12 +1,7 @@
 ---
-layout: default
 title: How-to guides
-nav_order: 3
-has_children: true
+permalink: /how-to/
 ---
-
-# How-to guides
-
 *Task-oriented recipes.* Each guide assumes you already know the basics and
 shows the steps to get one specific job done.
 

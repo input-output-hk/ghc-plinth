@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Environment variables
-parent: Reference
-nav_order: 2
+permalink: /reference/environment-variables/
 ---
-
-# Environment variables
-
 Variables that change the behaviour of the helper scripts.
 
 ## plinth-build.sh

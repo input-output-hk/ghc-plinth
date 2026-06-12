@@ -1,12 +1,7 @@
 ---
-layout: default
 title: Languages for smart contracts
-parent: Explanation
-nav_order: 3
+permalink: /explanation/languages/
 ---
-
-# Languages for smart contracts
-
 Every Cardano smart contract ultimately runs as
 [Untyped Plutus Core (UPLC)]({% link explanation/plutus-core.md %}) on the CEK
 machine. UPLC is deliberately small, so almost nobody writes it by hand:
