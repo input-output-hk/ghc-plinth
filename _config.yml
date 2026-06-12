@@ -11,9 +11,9 @@ plugins:
   - jekyll-feed
   - jemoji
 
-# Theme appearance: Chirpy-like dark skin + matching code highlighting
-text_skin: dark
-highlight_theme: tomorrow-night
+# Theme appearance: light skin + matching code highlighting
+text_skin: default
+highlight_theme: tomorrow
 
 # Clean URLs without the .html extension
 permalink: pretty
