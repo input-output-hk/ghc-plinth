@@ -29,6 +29,8 @@ docs:
         url: /how-to/build/
       - title: Use uplc-ghc in a project
         url: /how-to/use/
+      - title: Generate a blueprint
+        url: /how-to/generate-blueprint/
       - title: Test and benchmark the compiler
         url: /how-to/test/
 

@@ -112,17 +112,12 @@ lives. Typically it:
   script = serialiseCompiledCode validatorCode
   ```
 
-- **Describes it as a blueprint.** Wrapping the serialised code together with the
-  datum, redeemer, and parameter schemas into a `ContractBlueprint` value and
-  writing it out emits a [CIP-57 blueprint]({% link explanation/blueprints.md %}).
-  The schemas are collected with `deriveDefinitions`, and the document is written
-  with `writeBlueprint` (or rendered with `encodeBlueprint`):
-
-  ```haskell
-  deriveDefinitions :: forall ts. DefinitionsFor (UnrollAll ts) => Definitions (UnrollAll ts)
-  writeBlueprint    :: FilePath -> ContractBlueprint -> IO ()
-  encodeBlueprint   :: ContractBlueprint -> LBS.ByteString
-  ```
+- **Describes it as a blueprint.** A
+  [CIP-57 blueprint]({% link explanation/blueprints.md %}) can be generated for
+  one or more scripts directly in the off-chain code. Parts of it are derived
+  from the scripts themselves &mdash; the argument schemas, the compiled code,
+  its hash &mdash; while the rest of the metadata is filled in explicitly. See
+  [Generate a blueprint]({% link how-to/generate-blueprint.md %}).
 
 - **Builds transactions and tests.** The serialised script can be handed to
   `cardano-api` (or a test harness) to
