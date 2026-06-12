@@ -3,7 +3,7 @@ title: Use uplc-ghc in a project
 permalink: /how-to/use/
 ---
 
-The recommended way to use Plinth standalone compiler is to set its path once in `cabal.project`.
+The recommended way to use the Plinth standalone compiler is to set its path once in `cabal.project`.
 
 ```haskell
 with-compiler: /path/to/uplc-ghc
@@ -30,13 +30,10 @@ repository cardano-haskell-packages
 index-state:
   , hackage.haskell.org 2025-09-21T21:31:06Z
   , cardano-haskell-packages 2026-01-24T11:25:12Z
-
 ```
 
 Adapt the two `index-state` dates to your project: they pin the package set, and
 the right values depend on the `plutus-tx` version your `uplc-ghc` targets.
-
-
 
 In addition you may want to add the following `source-repository-package` blocks
 that build the cardano crypto C libraries (`libsodium`, `secp256k1`, `blst`)
@@ -97,14 +94,3 @@ Then refresh the package index and build:
 $ cabal update
 $ cabal build
 ```
-
-Alternatively, you can pass the compiler per command with `-w` (you still need
-the `cabal.project` above for the CHaP repository):
-
-```console
-$ cabal build -w /path/to/uplc-ghc
-```
-
-Either way, compiling a module that defines Plinth code yields Plutus Core in
-addition to the usual GHC outputs &mdash; no extra plugin configuration is
-required, because the Plinth plugin is built into the compiler.
