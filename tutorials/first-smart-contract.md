@@ -2,113 +2,165 @@
 title: Your first smart contract with Plinth
 permalink: /tutorials/first-smart-contract/
 ---
-In this tutorial you will compile a real smart contract to Plutus Core using
-the Plinth compiler, and look at the result. By the end you will have cloned the
-[Plinth project template][plinth-template], built it with `uplc-ghc`, and
-generated a CIP-57 blueprint from the compiled validator.
-
-You do not need to write any code: the example ships with the template project.
+Before writing a real validator, it helps to get the whole toolchain working
+end to end with the simplest possible Plinth program: a function that adds two
+numbers. In this tutorial you will create a tiny project from scratch, compile
+it with `uplc-ghc`, run it, and read the Plutus Core it produced.
 
 ## Before you start
 
 You need a built `uplc-ghc`. If you have not built it yet, follow
 [Install Plinth standalone compiler]({% link how-to/build.md %}) first &mdash;
-this tutorial waits for you here. Note where the `uplc-ghc` binary ended up; you will
-point cabal at it below. Throughout this tutorial, replace `/path/to/uplc-ghc`
-with the actual path to your `uplc-ghc`.
+this tutorial waits for you here. Note where the `uplc-ghc` binary ended up;
+throughout this tutorial, replace `/path/to/uplc-ghc` with its actual path.
 
-You will also need `git` and a recent `cabal` (3.8 or newer) on your `PATH`.
+You will also need a recent `cabal` (3.8 or newer) on your `PATH`.
 
-## Step 1: Get the example
+## Step 1: Create the project
 
-The example contract lives in its own repository, the Plinth project template.
-Clone it anywhere you like:
+Make a new directory and add the three files below.
 
-```console
-$ git clone https://github.com/IntersectMBO/plinth-template.git
-$ cd plinth-template
-```
+**`cabal.project`** points cabal at `uplc-ghc` and at the Cardano package
+repository (CHaP), which provides the Plinth libraries:
 
-The rest of this tutorial runs from inside this `plinth-template` directory.
-
-## Step 2: Meet the example project
-
-The template is an ordinary cabal project. Its smart-contract sources live in
-`src/`:
-
-- **`AuctionValidator.hs`** &mdash; a *spending validator* for a simple
-  auction. This is the on-chain script that decides whether a transaction is
-  allowed to spend the auction's funds.
-- **`AuctionMintingPolicy.hs`** &mdash; a *minting policy* paired with the
-  auction, controlling when the associated tokens may be minted.
-
-Together these make up the `plinth-validators` library. Under `app/` are two
-small programs that turn the compiled validators into CIP-57 blueprints:
-
-- **`GenAuctionValidatorBlueprint.hs`** (the `gen-auction-validator-blueprint`
-  executable)
-- **`GenMintingPolicyBlueprint.hs`** (the `gen-minting-policy-blueprint`
-  executable)
-
-These are ordinary Haskell modules: what makes them Plinth is that
-`uplc-ghc` compiles their Plinth definitions all the way down to Plutus Core.
-
-## Step 3: Compile the contracts
-
-Tell cabal to use `uplc-ghc` by adding a `with-compiler` line to the project's
-`cabal.project`:
-
-```
+```haskell
 with-compiler: /path/to/uplc-ghc
+
+packages: .
+
+repository cardano-haskell-packages
+  url: https://chap.intersectmbo.org/
+  secure: True
+  root-keys:
+    3e0cce471cf09815f930210f7827266fd09045445d65923e6d0238a6cd15126f
+    443abb7fb497a134c343faf52f0b659bd7999bc06b7f63fa76dc99d631f9bea1
+    a86a1f6ce86c449c46666bda44268677abf29b5b2d2eb5ec7af903ec2f117a82
+    bcec67e8e99cabfa7764d75ad9b158d72bfacf70ca1d0ec8bc6b4406d1bf8413
+    c00aae8461a256275598500ea0e187588c35a5d5d7454fb57eac18d9edb86a56
+    d4a35cd3121aa00d18544bb0ac01c3e1691d618f462c46129271bccf39f7e8ee
+
+index-state:
+  , hackage.haskell.org 2025-09-21T21:31:06Z
+  , cardano-haskell-packages 2026-01-24T11:25:12Z
 ```
 
-Now every cabal command in this project uses `uplc-ghc`. Refresh the package
-index and build:
+**`plinth-add.cabal`** describes the single executable. The `ghc-options` are
+the flags Plinth needs to compile predictably (turning off optimisations that
+would reshape the code before the plugin sees it) and to select the Plutus Core
+version to target:
+
+```haskell
+cabal-version: 3.0
+name:          plinth-add
+version:       0.1.0.0
+build-type:    Simple
+
+executable plinth-add
+  main-is:          Main.hs
+  default-language: Haskell2010
+  build-depends:
+    , base
+    , text
+    , prettyprinter
+    , plutus-tx        ^>=1.57
+    , plutus-core      ^>=1.57
+    , plutus-tx-plugin
+  ghc-options:
+    -fexternal-interpreter
+    -fobject-code -fno-full-laziness -fno-ignore-interface-pragmas
+    -fno-omit-interface-pragmas -fno-spec-constr -fno-specialise
+    -fno-strictness -fno-unbox-small-strict-fields
+    -fno-unbox-strict-fields
+    -fplugin-opt PlutusTx.Plugin:target-version=1.1.0
+```
+
+**`Main.hs`** is the whole program. It defines the on-chain function, compiles
+it to Plutus Core with a Template Haskell splice, and writes the result out as
+readable UPLC:
+
+```haskell
+{-# LANGUAGE TemplateHaskell #-}
+
+module Main where
+
+import PlutusTx
+import qualified PlutusTx.Prelude as Tx
+import qualified PlutusTx.Code as Code
+import PlutusCore.Pretty (prettyPlcReadableSimple)
+import Prettyprinter (defaultLayoutOptions, layoutPretty)
+import Prettyprinter.Render.Text (renderStrict)
+import Data.Text (unpack)
+
+-- The on-chain function: add two integers.
+addTyped :: Integer -> Integer -> Integer
+addTyped x y = x Tx.+ y
+
+-- Compile it to Plutus Core at compile time.
+addScript :: CompiledCode (Integer -> Integer -> Integer)
+addScript = $$(compile [|| addTyped ||])
+
+-- Render compiled code as readable UPLC text.
+renderUPLC :: CompiledCode a -> String
+renderUPLC =
+    unpack
+  . renderStrict
+  . layoutPretty defaultLayoutOptions
+  . prettyPlcReadableSimple
+  . Code.getPlcNoAnn
+
+main :: IO ()
+main = writeFile "add.uplc" (renderUPLC addScript)
+```
+
+The typed quote `[|| addTyped ||]` and the `compile` splice are the only
+Plinth-specific pieces; `PlutusTx.Prelude` (imported as `Tx`) supplies the
+on-chain `+`, and everything else is ordinary Haskell.
+
+## Step 2: Build it
 
 ```console
 $ cabal update
 $ cabal build
 ```
 
-The first run downloads and builds dependencies, so expect it to take a while.
+The first run downloads and builds the Plinth libraries from CHaP, so expect it
+to take a while. Because the Plinth plugin is built into `uplc-ghc`, no extra
+plugin configuration is required: the `compile` splice is translated to Plutus
+Core as part of the normal build.
 
-Because the Plinth plugin is built into `uplc-ghc`, no extra plugin
-configuration is required: compiling the validator modules yields Plutus Core in
-addition to the usual GHC outputs.
+## Step 3: Run it
+
+```console
+$ cabal run plinth-add
+```
+
+`main` runs and writes the compiled program to `add.uplc` in the current
+directory.
 
 ## Step 4: Look at the Plutus Core
 
-To see the compiled output as a concrete artefact, run one of the blueprint
-generators and have it write its blueprint to a file:
-
 ```console
-$ cabal run gen-auction-validator-blueprint -- auction-validator.json
-$ cat auction-validator.json
+$ cat add.uplc
 ```
 
-The resulting `auction-validator.json` is a CIP-57 blueprint. It embeds the
-compiled Plutus Core &mdash; the on-chain code that the Cardano ledger would
-actually execute &mdash; produced from Haskell by `uplc-ghc`, alongside the
-metadata that off-chain tooling uses to interact with the validator.
+You should see something like:
 
-## Step 5 (optional): Generate the minting-policy blueprint
-
-The companion generator works the same way:
-
-```console
-$ cabal run gen-minting-policy-blueprint -- minting-policy.json
+```
+program 1.1.0 (\x y -> addInteger x y)
 ```
 
-Comparing the two blueprints is a good thread to pull on once you are
-comfortable.
+That is the [UPLC]({% link explanation/uplc.md %}) your two-line Haskell function
+compiled to &mdash; the `+` became the `addInteger` builtin, wrapped in a
+`program` with its [language version]({% link explanation/uplc.md %}). This is
+exactly the kind of code the Cardano ledger executes, produced from Haskell by
+`uplc-ghc`.
 
 ## Where to go next
 
-- [Use uplc-ghc in a project]({% link how-to/use.md %}) &mdash; point your own
-  project at the compiler instead of the template.
-- [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})
-  &mdash; understand what `uplc-ghc` is doing under the hood.
-- [Plinth user guide][plinth] &mdash; learn to write Plinth code of your own.
-
-[plinth]: https://plutus.cardano.intersectmbo.org/docs/
-[plinth-template]: https://github.com/IntersectMBO/plinth-template
+- [Use uplc-ghc in a project]({% link how-to/use.md %}) &mdash; the same compiler
+  setup, described on its own.
+- [The Plinth contract language]({% link explanation/plinth-language.md %})
+  &mdash; how a real validator is written, beyond this toy function.
+- [Generate a blueprint]({% link how-to/generate-blueprint.md %}) &mdash; package
+  a compiled script for off-chain tooling. (A tutorial walking through it on a
+  small example is coming.)
