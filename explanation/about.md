@@ -2,7 +2,7 @@
 layout: default
 title: About Plinth and this fork
 parent: Explanation
-nav_order: 1
+nav_order: 3
 ---
 
 # About Plinth and this fork
