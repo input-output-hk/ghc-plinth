@@ -1,0 +1,6 @@
+<!-- Safari pinned-tab / mask icon: a single-color silhouette of the plinth.
+     Safari recolors it via the head's mask-icon `color` attribute, so this
+     must be solid black on a transparent background with no extra styling. -->
+<svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
+  <path d="M14 12h36v8H14zM22 20h20v26H22zM8 46h48v9H8z"/>
+</svg>
