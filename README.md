@@ -1,7 +1,21 @@
-The Glasgow Haskell Compiler
-============================
+Plinth Standalone Compiler
+==========================
 
-[![pipeline status](https://gitlab.haskell.org/ghc/ghc/badges/master/pipeline.svg?style=flat)](https://gitlab.haskell.org/ghc/ghc/commits/master)
+About this fork
+===============
+
+This is a fork of GHC that embeds the [Plinth][plinth] compiler, used to write
+smart contracts for the [Cardano][cardano] blockchain. Plinth (formerly known
+as Plutus Tx) is a subset of Haskell compiled to Plutus Core via a GHC Core
+plugin shipped here as a built-in static plugin.
+
+See the Plinth documentation:
+
+ - [Plinth user guide][plinth]
+ - [Plutus / Plinth GitHub repository][plutus-repo]
+ - [Plinth project template][plinth-template]
+
+The text below is the upstream GHC README.
 
 This is the source tree for [GHC][1], a compiler and interactive
 environment for the Haskell functional programming language.
@@ -11,104 +25,66 @@ For more information, visit [GHC's web site][1].
 Information for developers of GHC can be found on the [GHC issue tracker][2], and you can also view [proposals for new GHC features][13].
 
 
-Getting the Source
-==================
+Building from source
+====================
 
-There are two ways to get a source tree:
+Clone the repository together with its submodules (the `plutus` submodule
+provides `plutus-tx`, `plutus-tx-plugin`, and `plutus-core`):
 
- 1. *Download source tarballs*
+    $ git clone --recurse-submodules git@github.com:input-output-hk/ghc-plinth.git
 
-    Download the GHC source distribution:
+If you already cloned without `--recurse-submodules`, fetch them with:
 
-        ghc-<version>-src.tar.xz
+    $ git submodule update --init --recursive
 
-    which contains GHC itself and the "boot" libraries.
+Then build with the `plinth-build.sh` script at the root of the repository:
 
- 2. *Check out the source code from git*
+    $ ./plinth-build.sh
 
-        $ git clone --recurse-submodules git@gitlab.haskell.org:ghc/ghc.git
+The script bootstraps GHC and then builds the Plinth-enabled compiler,
+`uplc-ghc`. It expects a boot `ghc-9.6.7` and `cabal >= 3.14.2.0` on `PATH`
+(`happy` and `alex` are built locally if missing). Useful environment knobs:
 
-    Note: cloning GHC from Github requires a special setup. See [Getting a GHC
-    repository from Github][7].
+ - `REBUILD=1` forces a full rebuild.
+ - `RELEASE=1` builds a release flavour including documentation.
 
-  *See the GHC team's working conventions regarding [how to contribute a patch to GHC](https://gitlab.haskell.org/ghc/ghc/wikis/working-conventions/fixing-bugs).* First time contributors are encouraged to get started by just sending a Merge Request.
+A binary distribution archive (`ghc-<version>-<platform>.tar.xz`) is produced
+under `_build/bindist/`.
 
 
-Building & Installing
-=====================
+How to use it?
+==============
 
-For full information on building GHC, see the [GHC Building Guide][3].
-Here follows a summary - if you get into trouble, the Building Guide
-has all the answers.
+The build produces `uplc-ghc`, a GHC that ships the Plinth plugin as a built-in
+static plugin. Use it as the compiler for a Plinth project, for example by
+pointing `cabal` at it:
 
-Before building GHC you may need to install some other tools and
-libraries.  See, [Setting up your system for building GHC][8].
+    $ cabal build -w _build/stage1/bin/uplc-ghc
 
-*NB.* In particular, you need [GHC][1] installed in order to build GHC,
-because the compiler is itself written in Haskell.  You also need
-[Happy][4], [Alex][5], and [Cabal][9].  For instructions on how
-to port GHC to a new platform, see the [GHC Building Guide][3].
+Compiling a module that defines Plinth code then yields Plutus Core in addition
+to the usual GHC outputs. For a ready-made project layout to start from, see the
+[Plinth project template][plinth-template], and consult the
+[Plinth user guide][plinth] for how to write and compile Plinth code.
 
-For building library documentation, you'll need [Haddock][6].  To build
-the compiler documentation, you need [Sphinx](http://www.sphinx-doc.org/)
-and Xelatex (only for PDF output).
 
-**Quick start**: GHC is built using the [Hadrian build system](hadrian/README.md).
-The following gives you a default build:
+How to test it?
+===============
 
-    $ ./boot
-    $ ./configure
-    $ hadrian/build         # can also say '-jX' for X number of jobs
+After building, run the `plinth-test.sh` script at the root of the repository:
 
-  On Windows, you need an extra repository containing some build tools.
-  These can be downloaded for you by configure. This only needs to be done once by running:
+    $ ./plinth-test.sh
 
-    $ ./configure --enable-tarballs-autodownload
+It builds the example Plinth project under `plinth/test/` with `uplc-ghc` and
+regenerates its expected outputs. Set `CLEAN=1` to force a clean rebuild:
 
-  Additionally, on Windows, to run Hadrian you should run `hadrian/build.bat`
-  instead of `hadrian/build`.
+    $ CLEAN=1 ./plinth-test.sh
 
-(NB: **Do you have multiple cores? Be sure to tell that to `hadrian`!** This can
-save you hours of build time depending on your system configuration, and is
-almost always a win regardless of how many cores you have. As a simple rule,
-you should have about N+1 jobs, where `N` is the amount of cores you have.)
+There is also `plinth-bench.sh`, which builds and runs the `plutus-benchmark`
+test-suites with `uplc-ghc` and reports any diffs against the golden files
+committed under `plutus/plutus-benchmark/` (it requires the `plutus` submodule):
 
-The `./boot` step is only necessary if this is a tree checked out
-from git.  For source distributions downloaded from [GHC's web site][1],
-this step has already been performed.
+    $ ./plinth-bench.sh
 
-These steps give you the default build, which includes everything
-optimised and built in various ways (eg. profiling libs are built).
-It can take a long time.  To customise the build, see the file `HACKING.md`.
-
-Filing bugs and feature requests
-================================
-
-If you've encountered what you believe is a bug in GHC, or you'd like
-to propose a feature request, please let us know! Submit an [issue][10] and we'll be sure to look into it. Remember:
-**Filing a bug is the best way to make sure your issue isn't lost over
-time**, so please feel free.
-
-If you're an active user of GHC, you may also be interested in joining
-the [glasgow-haskell-users][11] mailing list, where developers and
-GHC users discuss various topics and hang out.
-
-Hacking & Developing GHC
-========================
-
-Once you've filed a bug, maybe you'd like to fix it yourself? That
-would be great, and we'd surely love your company! If you're looking
-to hack on GHC, check out the guidelines in the `HACKING.md` file in
-this directory - they'll get you up to speed quickly.
-
-Contributors & Acknowledgements
-===============================
-
-GHC in its current form wouldn't exist without the hard work of
-[its many contributors][12]. Over time, it has grown to include the
-efforts and research of many institutions, highly talented people, and
-groups from around the world. We'd like to thank them all, and invite
-you to join!
 
   [1]:  http://www.haskell.org/ghc/            "www.haskell.org/ghc/"
   [2]:  https://gitlab.haskell.org/ghc/ghc/issues
@@ -131,3 +107,11 @@ you to join!
           "https://gitlab.haskell.org/ghc/ghc/wikis/team-ghc"
   [13]: https://github.com/ghc-proposals/ghc-proposals
           "https://github.com/ghc-proposals/ghc-proposals"
+  [plinth]: https://plutus.cardano.intersectmbo.org/docs/
+          "Plinth and Plutus Core Documentation"
+  [cardano]: https://cardano.org/
+          "cardano.org"
+  [plutus-repo]: https://github.com/IntersectMBO/plutus
+          "github.com/IntersectMBO/plutus"
+  [plinth-template]: https://github.com/IntersectMBO/plinth-template
+          "github.com/IntersectMBO/plinth-template"
