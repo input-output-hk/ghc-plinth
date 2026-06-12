@@ -10,10 +10,8 @@ with-compiler: /path/to/uplc-ghc
 packages: .
 ```
 
-The same
-file also needs the Cardano package repository (CHaP), which provides the Plinth
-libraries (`plutus-tx`, `plutus-core`, and friends &mdash; they are not bundled
-with the compiler):
+The same file also needs the Cardano package repository (CHaP), which provides
+the Cardano dependencies of the Plinth libraries:
 
 ```haskell
 repository cardano-haskell-packages
@@ -32,8 +30,27 @@ index-state:
   , cardano-haskell-packages 2026-01-24T11:25:12Z
 ```
 
-Adapt the two `index-state` dates to your project: they pin the package set, and
-the right values depend on the `plutus-tx` version your `uplc-ghc` targets.
+Adapt the two `index-state` dates to your project: they pin the CHaP and Hackage
+package sets.
+
+The Plinth libraries themselves (`plutus-tx`, `plutus-core`, `plutus-tx-plugin`)
+are neither bundled with the compiler nor taken from CHaP. Pull them from the
+`ghc-plinth-plutus` fork that `uplc-ghc` was built against:
+
+```haskell
+source-repository-package
+  type: git
+  location: https://github.com/hsyl20/ghc-plinth-plutus
+  tag: 71c34793c1d034d4bfe8c92b51828dc1d38aa04c
+  subdir: plutus-tx
+          plutus-core
+          plutus-tx-plugin
+```
+
+The `tag` must match your `uplc-ghc`: the built-in plugin only replaces the
+compiled-code placeholder for code built against the *same* fork, so the
+same-numbered `plutus-tx` on CHaP will not work. Use the plutus commit your
+`uplc-ghc` was built from.
 
 In addition you may want to add the following `source-repository-package` blocks
 that build the C crypto libraries used by Cardano (`libsodium`, `secp256k1`,

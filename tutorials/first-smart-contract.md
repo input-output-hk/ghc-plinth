@@ -20,11 +20,12 @@ You will also need a recent `cabal` (3.8 or newer) on your `PATH`.
 
 Make a new directory and add the three files below.
 
-**`cabal.project`** points cabal at `uplc-ghc` and at the Cardano package
-repository (CHaP), which provides the Plinth libraries. The
-`source-repository-package` blocks build the cardano crypto C libraries
-(`libsodium`, `secp256k1`, `blst`) from source as Haskell packages, so you do
-not need them installed on your system:
+**`cabal.project`** wires up the build. It points cabal at `uplc-ghc`; pulls the
+Plinth libraries (`plutus-tx`, `plutus-core`, `plutus-tx-plugin`) from the
+`ghc-plinth-plutus` fork the compiler was built against; uses the Cardano
+package repository (CHaP) for the remaining dependencies; and builds the Cardano
+crypto C libraries (`libsodium`, `secp256k1`, `blst`) from source via the
+`*-clib` blocks, so you do not need them installed on your system:
 
 ```haskell
 with-compiler: /path/to/uplc-ghc
@@ -45,6 +46,15 @@ repository cardano-haskell-packages
 index-state:
   , hackage.haskell.org 2025-09-21T21:31:06Z
   , cardano-haskell-packages 2026-01-24T11:25:12Z
+
+-- The Plinth libraries, from the fork uplc-ghc was built against.
+source-repository-package
+  type: git
+  location: https://github.com/hsyl20/ghc-plinth-plutus
+  tag: 71c34793c1d034d4bfe8c92b51828dc1d38aa04c
+  subdir: plutus-tx
+          plutus-core
+          plutus-tx-plugin
 
 source-repository-package
   type: git
@@ -87,6 +97,12 @@ package sodium-clib
   -- link phase fails otherwise.
   configure-options: --enable-pie=no
 ```
+
+The `ghc-plinth-plutus` `tag` must match your `uplc-ghc`: the plugin built into
+the compiler only replaces the compiled-code placeholder for code built against
+the *same* fork, so the same-numbered `plutus-tx` on CHaP will not do. The commit
+above matches this guide's compiler; for a different `uplc-ghc`, use the plutus
+commit it was built from.
 
 **Not for production.** The vendored crypto C libraries pulled in by the
 `*-clib` `source-repository-package`s above have not been audited. Use this
@@ -174,10 +190,10 @@ $ cabal update
 $ cabal build
 ```
 
-The first run downloads and builds the Plinth libraries from CHaP, so expect it
-to take a while. Because the Plinth plugin is built into `uplc-ghc`, no extra
-plugin configuration is required: the `compile` splice is translated to Plutus
-Core as part of the normal build.
+The first run clones and builds the Plinth libraries and the crypto C libraries
+from source, so expect it to take a while. Because the Plinth plugin is built
+into `uplc-ghc`, no extra plugin configuration is required: the `compile` splice
+is translated to Plutus Core as part of the normal build.
 
 ## Step 3: Run it
 
