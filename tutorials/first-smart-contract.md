@@ -55,12 +55,19 @@ These are ordinary Haskell modules: what makes them Plinth is that
 
 ## Step 3: Compile the contracts
 
-Refresh the package index, then build the project with `uplc-ghc` as the
-compiler by passing it to cabal with `-w`:
+Tell cabal to use `uplc-ghc` by adding a `with-compiler` line to the project's
+`cabal.project`:
+
+```
+with-compiler: /path/to/uplc-ghc
+```
+
+Now every cabal command in this project uses `uplc-ghc`. Refresh the package
+index and build:
 
 ```console
 $ cabal update
-$ cabal build -w /path/to/uplc-ghc
+$ cabal build
 ```
 
 The first run downloads and builds dependencies, so expect it to take a while.
@@ -72,12 +79,10 @@ addition to the usual GHC outputs.
 ## Step 4: Look at the Plutus Core
 
 To see the compiled output as a concrete artefact, run one of the blueprint
-generators &mdash; again with `uplc-ghc` as the compiler &mdash; and have it
-write its blueprint to a file:
+generators and have it write its blueprint to a file:
 
 ```console
-$ cabal run -w /path/to/uplc-ghc \
-    gen-auction-validator-blueprint -- auction-validator.json
+$ cabal run gen-auction-validator-blueprint -- auction-validator.json
 $ cat auction-validator.json
 ```
 
@@ -91,8 +96,7 @@ metadata that off-chain tooling uses to interact with the validator.
 The companion generator works the same way:
 
 ```console
-$ cabal run -w /path/to/uplc-ghc \
-    gen-minting-policy-blueprint -- minting-policy.json
+$ cabal run gen-minting-policy-blueprint -- minting-policy.json
 ```
 
 Comparing the two blueprints is a good thread to pull on once you are
