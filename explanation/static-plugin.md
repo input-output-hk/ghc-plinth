@@ -2,7 +2,7 @@
 layout: default
 title: The built-in static plugin
 parent: Explanation
-nav_order: 4
+nav_order: 5
 ---
 
 # The built-in static plugin
