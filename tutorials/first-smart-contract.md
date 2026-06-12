@@ -21,7 +21,10 @@ You will also need a recent `cabal` (3.8 or newer) on your `PATH`.
 Make a new directory and add the three files below.
 
 **`cabal.project`** points cabal at `uplc-ghc` and at the Cardano package
-repository (CHaP), which provides the Plinth libraries:
+repository (CHaP), which provides the Plinth libraries. The
+`source-repository-package` blocks build the cardano crypto C libraries
+(`libsodium`, `secp256k1`, `blst`) from source as Haskell packages, so you do
+not need them installed on your system:
 
 ```haskell
 with-compiler: /path/to/uplc-ghc
@@ -42,6 +45,47 @@ repository cardano-haskell-packages
 index-state:
   , hackage.haskell.org 2025-09-21T21:31:06Z
   , cardano-haskell-packages 2026-01-24T11:25:12Z
+
+source-repository-package
+  type: git
+  location: https://github.com/hsyl20/cardano-base
+  subdir: cardano-crypto-class
+  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
+
+source-repository-package
+  type: git
+  location: https://github.com/hsyl20/cardano-base
+  subdir: cardano-crypto-praos
+  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
+
+source-repository-package
+  type: git
+  location: https://github.com/haskell-cryptography/blst-clib
+  tag: 0fd1d38d5ceed5529ac646efae3095b493a97927
+
+source-repository-package
+  type: git
+  location: https://github.com/haskell-cryptography/libsodium-clib
+  tag: 985c18f75a71ff721370940666d71fda53edbb14
+
+source-repository-package
+  type: git
+  location: https://github.com/haskell-cryptography/secp256k1-clib
+  tag: 211b95baad422966c9e719ed70cbc189c58eaae5
+
+package secp256k1-clib
+  flags: +schnorrsig +recovery +ecdh +extrakeys
+
+package cardano-crypto-class
+  flags: +use-haskell-clibs
+
+package cardano-crypto-praos
+  flags: +use-haskell-clibs
+
+package sodium-clib
+  -- disable -fPIE: the static boot libraries are not built with it, so the
+  -- link phase fails otherwise.
+  configure-options: --enable-pie=no
 ```
 
 **`plinth-add.cabal`** describes the single executable. The `ghc-options` are
