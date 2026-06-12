@@ -29,10 +29,7 @@ packages: .
 ```
 
 This is the persistent equivalent of passing `cabal -w /path/to/uplc-ghc` on the
-command line. Nothing else changes: because the
-Plinth pass is a [built-in static plugin]({% link explanation/static-plugin.md %}),
-compiling a module that defines Plinth code simply yields Plutus Core in addition
-to the usual GHC outputs &mdash; no plugin flags, no extra dependencies.
+command line.
 
 ## On-chain and off-chain in one project
 
