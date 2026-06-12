@@ -1,0 +1,19 @@
+title: Plinth Standalone Compiler
+description: A fork of GHC that compiles Plinth (Plutus Tx) to Plutus Core.
+remote_theme: just-the-docs/just-the-docs
+
+plugins:
+  - jekyll-remote-theme
+
+# Sidebar search
+search_enabled: true
+
+# Links shown in the top-right corner
+aux_links:
+  "GitHub repository":
+    - "https://github.com/input-output-hk/ghc-plinth"
+aux_links_new_tab: true
+
+# Footer
+back_to_top: true
+back_to_top_text: "Back to top"
