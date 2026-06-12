@@ -1,13 +1,13 @@
 # Top navigation bar
 header:
+  - title: Explanation
+    url: /explanation/
   - title: Tutorials
     url: /tutorials/
   - title: How-to
     url: /how-to/
   - title: Reference
     url: /reference/
-  - title: Explanation
-    url: /explanation/
   - title: GitHub
     url: https://github.com/input-output-hk/ghc-plinth
 
@@ -15,25 +15,6 @@ header:
 docs:
   - title: Home
     url: /
-
-  - title: Tutorials
-    url: /tutorials/
-    children:
-      - title: Your first smart contract with Plinth
-        url: /tutorials/first-smart-contract/
-
-  - title: How-to guides
-    url: /how-to/
-    children:
-      - title: Install Plinth standalone compiler
-        url: /how-to/build/
-      - title: Use uplc-ghc in a project
-        url: /how-to/use/
-      - title: Generate a blueprint
-        url: /how-to/generate-blueprint/
-
-  - title: Reference
-    url: /reference/
 
   - title: Explanation
     url: /explanation/
@@ -56,3 +37,22 @@ docs:
         url: /explanation/languages/
       - title: "The Plinth standalone compiler"
         url: /explanation/standalone-compiler/
+
+  - title: Tutorials
+    url: /tutorials/
+    children:
+      - title: Your first smart contract with Plinth
+        url: /tutorials/first-smart-contract/
+
+  - title: How-to guides
+    url: /how-to/
+    children:
+      - title: Install Plinth standalone compiler
+        url: /how-to/build/
+      - title: Use uplc-ghc in a project
+        url: /how-to/use/
+      - title: Generate a blueprint
+        url: /how-to/generate-blueprint/
+
+  - title: Reference
+    url: /reference/
