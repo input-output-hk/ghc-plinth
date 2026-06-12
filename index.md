@@ -11,8 +11,8 @@ built-in static GHC plugin, producing a self-contained compiler called
 
 ## Finding your way around
 
-This documentation draws on the [Diataxis](https://diataxis.fr/) framework,
-organising docs by what you need from them:
+This documentation follows the [Diataxis](https://diataxis.fr/) framework,
+which separates docs into four kinds by what you need from them:
 
 - **[Tutorials]({% link tutorials/index.md %})** &mdash; *learning-oriented.*
   Start here if you are new: a hands-on lesson that walks you through compiling
