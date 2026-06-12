@@ -65,14 +65,9 @@ handle real funds.
 source-repository-package
   type: git
   location: https://github.com/hsyl20/cardano-base
+  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
   subdir: cardano-crypto-class
-  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
-
-source-repository-package
-  type: git
-  location: https://github.com/hsyl20/cardano-base
-  subdir: cardano-crypto-praos
-  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
+          cardano-crypto-praos
 
 source-repository-package
   type: git
