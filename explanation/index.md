@@ -12,5 +12,6 @@ your understanding rather than get something done.
 - [From Plinth to the chain: compilation, blueprints, and transactions]({% link explanation/from-plinth-to-the-chain.md %})
 - [Contract blueprints (CIP-57)]({% link explanation/blueprints.md %})
 - [The structure of a Plinth smart contract]({% link explanation/structure.md %})
+- [The Plinth contract language]({% link explanation/plinth-language.md %})
 - [Languages for smart contracts]({% link explanation/languages.md %})
 - [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})

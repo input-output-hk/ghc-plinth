@@ -77,7 +77,9 @@ any other data. That is what lets one project hold both worlds.
 (A handful of other Template Haskell helpers &mdash; `makeLift`,
 `makeIsDataIndexed` &mdash; derive the glue that moves Haskell datatypes across
 the boundary as on-chain `Data`. Writing the Plinth code itself, and these
-helpers, are the subject of a separate page; here we only need the splice.)
+helpers, are covered in
+[The Plinth contract language]({% link explanation/plinth-language.md %}); here
+we only need the splice.)
 
 ## Working with `CompiledCode` off-chain
 
@@ -142,7 +144,8 @@ executables are the off-chain half consuming them.
   &mdash; why building with `uplc-ghc` needs no plugin configuration.
 - [Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %})
   &mdash; the same template, built step by step.
-- [Plinth user guide][plinth] &mdash; for writing Plinth code itself, which will
-  also get its own explanation page here.
+- [The Plinth contract language]({% link explanation/plinth-language.md %})
+  &mdash; writing the on-chain code itself.
+- [Plinth user guide][plinth] &mdash; the complete reference for writing Plinth.
 
 [plinth]: https://plutus.cardano.intersectmbo.org/docs/
