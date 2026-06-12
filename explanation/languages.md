@@ -36,56 +36,65 @@ axes capture most of the differences:
 
 ## The languages
 
-**Plinth** (formerly Plutus Tx) is a subset of Haskell. You write ordinary
-Haskell and a GHC plugin translates the relevant definitions to UPLC &mdash;
-this fork bakes that plugin into the compiler as `uplc-ghc` (see
+**[Plinth][plinth]** (formerly Plutus Tx) is a subset of Haskell. You write
+ordinary Haskell and a GHC plugin translates the relevant definitions to UPLC
+&mdash; this fork bakes that plugin into the compiler as `uplc-ghc` (see
 [About Plinth and this fork]({% link explanation/about.md %})). It is IOG's
 reference implementation, so it tracks the ledger's capabilities closely and
 gives access to the full Haskell ecosystem, which suits teams already fluent in
-Haskell. The trade-offs: its output is generally less size-optimized than Aiken
-or Plutarch, and because compilation happens inside a GHC plugin, debugging the
-on-chain code has comparatively limited tooling.
+Haskell. Plinth is not limited to on-chain validators: because Plinth code is
+just Haskell, the *off-chain* code that builds and submits transactions can be
+written in the same language &mdash; even in the same file as the on-chain
+contract &mdash; and the compiler ensures that data crossing the
+on-chain/off-chain boundary is transferred safely, sharing the same Haskell
+types on both sides. The trade-offs: its output is generally less size-optimized
+than Aiken or Plutarch, and because compilation happens inside a GHC plugin,
+debugging the on-chain code has comparatively limited tooling.
 
-**Plutarch** is a typed eDSL embedded in Haskell. Rather than hiding UPLC, it
+**[Plutarch][plutarch]** is a typed eDSL embedded in Haskell. Rather than hiding UPLC, it
 exposes its structure as Haskell values, so you describe quite directly the code
 that will be generated. This gives fine control and produces among the smallest,
 cheapest scripts available, which makes it popular for fee-critical validators.
 The cost is a steeper learning curve and code that is harder to read and reason
 about than straight-line Plinth.
 
-**Aiken** is a purpose-built standalone language for on-chain code, with a
+**[Aiken][aiken]** is a purpose-built standalone language for on-chain code, with a
 modern, functional syntax and a toolchain (compiler, formatter, test runner,
 package management) designed for a smooth developer experience. It compiles to
 compact, efficient UPLC and has grown a substantial community. It targets the
 on-chain validator only, so it is typically paired with a separate off-chain
 library to build and submit transactions.
 
-**OpShin** lets you write on-chain code as a subset of valid Python. Its main
+**[OpShin][opshin]** lets you write on-chain code as a subset of valid Python. Its main
 appeal is to developers with a Python background, who can reuse familiar syntax
 and tooling rather than learning a functional language.
 
-**plu-ts** is an eDSL embedded in TypeScript. It targets JavaScript/TypeScript
+**[plu-ts][plu-ts]** is an eDSL embedded in TypeScript. It targets JavaScript/TypeScript
 developers and spans both on-chain and off-chain code, so a web team can stay in
 one language across the whole stack.
 
-**Scalus** compiles Scala to UPLC, bringing Cardano development into the JVM
+**[Scalus][scalus]** compiles Scala to UPLC, bringing Cardano development into the JVM
 ecosystem. Like plu-ts it covers both on-chain and off-chain code, appealing to
 teams already invested in Scala and the JVM.
 
-**Helios** is a lightweight standalone language with a JavaScript-like syntax.
+**[Helios][helios]** is a lightweight standalone language with a JavaScript-like
+syntax.
 It is designed to be small and self-contained &mdash; often a single file with
 no heavy toolchain &mdash; favouring quick starts and easy embedding.
 
-**Marlowe** is a special-purpose DSL for *financial* contracts, with both a
+**[Marlowe][marlowe]** is a special-purpose DSL for *financial* contracts, with both a
 textual form and a visual editor. It is aimed at domain experts and
 non-programmers building well-understood financial instruments, rather than at
 general-purpose smart-contract development.
+
+This list is not exhaustive, and the ecosystem keeps growing. If a language you
+think belongs here is missing, please [open an issue][issues] so we can add it.
 
 ## At a glance
 
 | Language | Base / paradigm | Scope | Notable trait |
 |----------|-----------------|-------|---------------|
-| Plinth | Subset of Haskell | On-chain | Reference implementation; Haskell ecosystem |
+| Plinth | Subset of Haskell | On- and off-chain | Reference implementation; Haskell ecosystem; shared on-/off-chain types |
 | Plutarch | Haskell eDSL (low-level) | On-chain | Fine control; among the smallest scripts |
 | Aiken | Standalone functional | On-chain | Modern toolchain and developer experience |
 | OpShin | Subset of Python | On-chain | Familiar to Python developers |
@@ -114,4 +123,12 @@ the choice is about the path to that target, not the target itself.
   Portal's overview of the options.
 
 [plinth]: https://plutus.cardano.intersectmbo.org/docs/
+[plutarch]: https://plutarch-plutus.org/
+[aiken]: https://aiken-lang.org/
+[opshin]: https://opshin.dev/
+[plu-ts]: https://github.com/HarmonicLabs/plu-ts
+[scalus]: https://scalus.org/
+[helios]: https://helios-lang.io/
+[marlowe]: https://marlowe.iohk.io/
 [devportal]: https://developers.cardano.org/docs/smart-contracts/
+[issues]: https://github.com/input-output-hk/ghc-plinth/issues
