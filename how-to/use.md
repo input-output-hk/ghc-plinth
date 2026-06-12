@@ -2,23 +2,20 @@
 title: Use uplc-ghc in a project
 permalink: /how-to/use/
 ---
-The build produces `uplc-ghc`, a GHC that ships the Plinth plugin as a built-in
-static plugin. Use it as the compiler for a Plinth project.
 
-## Point cabal at uplc-ghc
-
-The recommended way is to set the compiler once in `cabal.project`. The same
-file also needs the Cardano package repository (CHaP), which provides the Plinth
-libraries (`plutus-tx`, `plutus-core`, and friends &mdash; they are not bundled
-with the compiler), plus `source-repository-package` blocks that build the
-cardano crypto C libraries (`libsodium`, `secp256k1`, `blst`) from source, so
-you do not need them installed on your system:
+The recommended way to use Plinth standalone compiler is to set its path once in `cabal.project`.
 
 ```haskell
 with-compiler: /path/to/uplc-ghc
-
 packages: .
+```
 
+The same
+file also needs the Cardano package repository (CHaP), which provides the Plinth
+libraries (`plutus-tx`, `plutus-core`, and friends &mdash; they are not bundled
+with the compiler):
+
+```haskell
 repository cardano-haskell-packages
   url: https://chap.intersectmbo.org/
   secure: True
@@ -34,6 +31,24 @@ index-state:
   , hackage.haskell.org 2025-09-21T21:31:06Z
   , cardano-haskell-packages 2026-01-24T11:25:12Z
 
+```
+
+Adapt the two `index-state` dates to your project: they pin the package set, and
+the right values depend on the `plutus-tx` version your `uplc-ghc` targets.
+
+
+
+In addition you may want to add the following `source-repository-package` blocks
+that build the cardano crypto C libraries (`libsodium`, `secp256k1`, `blst`)
+from source, so you do not need them installed on your system.
+
+**Not for production.** The vendored crypto C libraries pulled in by the
+`*-clib` `source-repository-package`s below have not been audited. Use this
+setup for learning and experimentation only &mdash; never for contracts that
+handle real funds.
+{:.warning}
+
+```haskell
 source-repository-package
   type: git
   location: https://github.com/hsyl20/cardano-base
@@ -75,15 +90,6 @@ package sodium-clib
   -- link phase fails otherwise.
   configure-options: --enable-pie=no
 ```
-
-Adapt the two `index-state` dates to your project: they pin the package set, and
-the right values depend on the `plutus-tx` version your `uplc-ghc` targets.
-
-**Not for production.** The vendored crypto C libraries pulled in by the
-`*-clib` `source-repository-package`s above have not been audited. Use this
-setup for learning and experimentation only &mdash; never for contracts that
-handle real funds.
-{:.warning}
 
 Then refresh the package index and build:
 
