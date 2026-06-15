@@ -225,3 +225,5 @@ exactly the kind of code the Cardano ledger executes, produced from Haskell by
 - [Generate a blueprint]({% link how-to/generate-blueprint.md %}) &mdash; package
   a compiled script for off-chain tooling. (A tutorial walking through it on a
   small example is coming.)
+- [Test a Plinth contract locally]({% link how-to/test.md %}) &mdash; evaluate a
+  compiled validator and measure its execution budget, with no node.

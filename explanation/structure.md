@@ -122,7 +122,8 @@ lives. Typically it:
 - **Builds transactions and tests.** The serialised script can be handed to
   `cardano-api` (or a test harness) to
   [attach it to a transaction]({% link explanation/from-plinth-to-the-chain.md %})
-  as an inline or reference script, and to exercise the validator off-chain.
+  as an inline or reference script, and to
+  [exercise the validator off-chain]({% link how-to/test.md %}).
 
 ## A typical layout
 

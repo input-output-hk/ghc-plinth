@@ -53,6 +53,8 @@ docs:
         url: /how-to/use/
       - title: Generate a blueprint
         url: /how-to/generate-blueprint/
+      - title: Test a Plinth contract locally
+        url: /how-to/test/
 
   - title: Reference
     url: /reference/
