@@ -2,18 +2,19 @@
 title: Overview
 permalink: /
 ---
-A fork of [GHC](https://www.haskell.org/ghc/) that embeds the
-[Plinth][plinth] compiler, used to write smart contracts for the
-[Cardano][cardano] blockchain. Plinth (formerly Plutus Tx) is a subset of
-Haskell compiled to **Plutus Core**; this fork ships the compiler as a
-built-in static GHC plugin, producing a self-contained compiler called
-**`uplc-ghc`**.
+Documentation for the **Plinth** compiler, a language for writing on-chain and
+off-chain code for the [Cardano][cardano] blockchain. Plinth (formerly Plutus
+Tx) is a subset of [Haskell](https://www.haskell.org/) compiled to **Plutus
+Core**.
 
 ## Finding your way around
 
 This documentation follows the [Diataxis](https://diataxis.fr/) framework,
 which separates docs into four kinds by what you need from them:
 
+- **[Explanation]({% link explanation/index.md %})** &mdash;
+  *understanding-oriented.* Background and discussion: what Plinth is and how
+  the compiler works.
 - **[Tutorials]({% link tutorials/index.md %})** &mdash; *learning-oriented.*
   Start here if you are new: a hands-on lesson that walks you through compiling
   your first smart contract.
@@ -22,9 +23,6 @@ which separates docs into four kinds by what you need from them:
   project, and generate a blueprint.
 - **[Reference]({% link reference/index.md %})** &mdash; *information-oriented.*
   Dry facts to look up.
-- **[Explanation]({% link explanation/index.md %})** &mdash;
-  *understanding-oriented.* Background and discussion: what Plinth is and how
-  this fork works.
 
 ## External documentation
 
