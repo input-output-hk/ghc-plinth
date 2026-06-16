@@ -174,7 +174,9 @@ letting datatypes be encoded directly rather than via Scott encoding:
 - `(case <term> <branch> ...)` &mdash; branch on a `constr` value
 
 These usually produce smaller, cheaper code than the lambda encodings they
-replace.
+replace. Whether one of your datatypes is represented this way or directly as
+`data` is a choice &mdash; see [Data
+representation]({% link explanation/data-representation.md %}).
 
 ## How the language has grown
 

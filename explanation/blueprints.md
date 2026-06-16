@@ -101,6 +101,8 @@ This is the crux of why the blueprint is the cross-toolchain contract: the
 *constructor indices and field order* it records are precisely what the
 on-chain script decodes. Any off-chain code that builds a redeemer must match
 them. Get the index wrong and the transaction fails when the validator runs.
+On the Haskell side those indices come from `makeIsDataIndexed`; see [Data
+representation]({% link explanation/data-representation.md %}).
 
 ## Producing a blueprint
 

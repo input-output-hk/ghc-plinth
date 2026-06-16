@@ -59,9 +59,9 @@ Two Template Haskell helpers derive them:
   work: the off-chain code applies a parameter with `liftCode` (see
   [the structure page]({% link explanation/structure.md %})).
 
-A schema-aware variant, `makeIsDataSchemaIndexed`, additionally derives the
-[CIP-57 blueprint schema]({% link explanation/blueprints.md %}) for the type; the
-template uses it so its blueprint generators have schemas to emit.
+How those encodings work, the choice between sum-of-products and `Data`-backed
+representations, and the schema-aware variant `makeIsDataSchemaIndexed` are
+covered in [Data representation]({% link explanation/data-representation.md %}).
 
 ## What a validator looks like
 
@@ -111,7 +111,9 @@ Because all of this is Haskell, the datatypes and their derived `ToData` /
 `FromData` instances are shared directly with the
 [off-chain code]({% link explanation/structure.md %}) in the same project: the
 off-chain side builds datums and redeemers from the very same types the validator
-decodes, so the two halves cannot drift out of agreement.
+decodes, so the two halves cannot drift out of agreement. [Data
+representation]({% link explanation/data-representation.md %}) covers this sharing
+in detail.
 
 ## Further reading
 

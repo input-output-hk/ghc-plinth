@@ -33,6 +33,8 @@ docs:
         url: /explanation/structure/
       - title: "The Plinth contract language"
         url: /explanation/plinth-language/
+      - title: "Data representation: Haskell types to Plutus Core"
+        url: /explanation/data-representation/
       - title: Languages for smart contracts
         url: /explanation/languages/
       - title: "The Plinth standalone compiler"
