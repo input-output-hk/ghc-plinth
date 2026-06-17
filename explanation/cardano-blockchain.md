@@ -44,8 +44,8 @@ the sum of the UTXOs you control. A transaction **consumes** some existing
 outputs as its *inputs* and **produces** new outputs. An output can be spent
 exactly once; once consumed it is gone, and new outputs take its place.
 
-Cardano uses the **extended UTXO (EUTXO)** model, which generalises plain UTXO
-in two ways:
+Cardano uses the **extended UTXO (EUTXO)** model ([formalised in this
+paper][eutxo-paper]), which generalises plain UTXO in two ways:
 
 - **Outputs can carry arbitrary data (a *datum*).** A plain UTXO only holds a
   value and an address. An EUTXO output can additionally attach a piece of
@@ -120,6 +120,9 @@ Cardano ledger actually executes.
 - [How smart contracts run: Plutus Core and the CEK machine]({% link explanation/plutus-core.md %})
   &mdash; what validators are compiled to, and how the ledger evaluates them.
 - [The Plinth standalone compiler]({% link explanation/standalone-compiler.md %})
+- [The Extended UTXO Model][eutxo-paper] &mdash; the paper formalising the EUTXO
+  model that Cardano is built on.
 - [Cardano][cardano]
 
 [cardano]: https://cardano.org/
+[eutxo-paper]: https://www.iog.io/papers/the-extended-utxo-model
