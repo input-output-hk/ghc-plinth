@@ -12,7 +12,14 @@ esac
 RELEASE_HADRIAN_ARGS=""
 DEV_HADRIAN_ARGS="--docs=none"
 RELEASE_FLAVOUR="release"
-DEV_FLAVOUR="release+debug_info+debug_ghc+assertions"
+# Note [Lean CI flavour]
+# ~~~~~~~~~~~~~~~~~~~~~~~
+# debug_info/debug_ghc compile GHC and its libraries with DWARF (-g3), which
+# inflates the build tree 2-3x and is the main disk-space hog on CI runners.
+# They only help when debugging GHC itself, so the dev/CI flavour keeps just
+# "assertions" (cheap, still catches GHC/plugin bugs). Use RELEASE=1 for a
+# clean release build.
+DEV_FLAVOUR="release+assertions"
 
 # platform-specific default configure arguments
 case "$UNAME_S" in
@@ -227,8 +234,15 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     SRC_UPLC_GHC=$("$CABAL" ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} list-bin ${CABAL_BUILD_ARGS} ghc:ghc)
     echo "installing uplc-ghc: $SRC_UPLC_GHC => $DEST_UPLC_GHC"
 
-    # add to build dir
+    # add to build dir (needed for testing, so always done)
     cp "$SRC_UPLC_GHC" "$DEST_UPLC_GHC"
+
+    # The bindist fixup below only matters for the shippable bindist, which is
+    # only produced for RELEASE=1. Skipping it on CI avoids duplicating the
+    # whole bindist tree on disk. See Note [Lean CI flavour].
+    if [ "$RELEASE" -ne 1 ]; then
+        exit 0
+    fi
 
     # fixup the bindist:
     #  - add uplc-ghc with the static Plinth plugin
@@ -271,8 +285,11 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     done
 )
 
-# create bindist archive after fixup
-echo "creating bindist archive..."
-BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
-(cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
+# create bindist archive after fixup (release only: the tar|xz is slow and
+# needs extra disk; CI only needs _build/stage1/bin/uplc-ghc for testing).
+if [ "$RELEASE" -eq 1 ]; then
+    echo "creating bindist archive..."
+    BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
+    (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
+fi
 

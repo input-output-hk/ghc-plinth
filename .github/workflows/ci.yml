@@ -31,6 +31,8 @@ jobs:
         android: true
         dotnet: true
         haskell: false
+        # left off: it is slow (~1-2 min) and the bulk of the build now lives
+        # on /mnt, so reclaiming large packages on / is not needed.
         large-packages: false
         docker-images: true
         swap-storage: true
@@ -38,6 +40,18 @@ jobs:
     - uses: actions/checkout@v4
       with:
         submodules: false
+
+    # The runner's workspace disk (/) has ~21 GB free; the ephemeral disk at
+    # /mnt has ~70 GB. Build everything under _build on /mnt to avoid running
+    # out of space. Both plinth-build.sh and plinth-test.sh write under _build.
+    # We bind-mount (rather than symlink) so _build stays a real directory:
+    # a symlinked build root can confuse path tracking in Hadrian/Cabal.
+    - name: Build on the large /mnt disk
+      run: |
+        sudo mkdir -p /mnt/_build
+        mkdir -p "$GITHUB_WORKSPACE/_build"
+        sudo mount --bind /mnt/_build "$GITHUB_WORKSPACE/_build"
+        sudo chown "$USER" "$GITHUB_WORKSPACE/_build"
 
     - name: Setup SSH for submodules
       run: |
@@ -49,7 +63,12 @@ jobs:
     - name: Init and update submodules
       run: |
        git submodule sync
-       git submodule update --init --recursive
+       # Shallow (single-commit) submodule clones: the build never needs
+       # submodule history, and these 29 submodules (notably plutus) carry a
+       # lot of it. --jobs fetches them in parallel. GitHub allows fetching
+       # the pinned SHA directly, so depth 1 works even when it isn't a
+       # branch tip.
+       git submodule update --init --recursive --depth 1 --jobs 4
 
     - uses: haskell-actions/setup@v2
       id: setup
