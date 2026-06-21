@@ -17,11 +17,11 @@ index-state:
 
 packages:
   ./.
-  ../plutus-tx-plugin
 
 optional-packages:
   ../../plutus/plutus-tx
   ../../plutus/plutus-core
+  ../../plutus/plutus-ledger-api
 
 source-repository-package
     type: git
