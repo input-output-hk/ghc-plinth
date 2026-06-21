@@ -45,17 +45,16 @@ common plinth-options
     -fno-omit-interface-pragmas -fno-spec-constr -fno-specialise
     -fno-strictness -fno-unbox-small-strict-fields
     -fno-unbox-strict-fields
-    -fplugin-opt PlutusTx.Plugin:target-version=1.1.0
+    -fplugin-opt Plinth.Plugin:target-version=1.1.0
 
 common plutus-deps
+  -- The marker (plinthc) and the anchor/unsupported markers now live in
+  -- plutus-tx (PlutusTx.Plugin.Utils), and the compiler is built into
+  -- uplc-ghc, so no dependency on plutus-tx-plugin is needed anymore.
   build-depends:
-    , plutus-core ^>=1.57.0.0
-    , plutus-ledger-api ^>=1.57.0.0
-    , plutus-tx ^>=1.57.0.0
-    , plutus-tx-plugin
-    -- plutus-tx-plugin should be removed later. for now we still depend on some symbols
-    -- , plutus-tx-plugin-stub
-    -- XXX: there should be no more dependency on plutus-tx-plugin
+    , plutus-core ^>=1.65.0.0
+    , plutus-ledger-api ^>=1.65.0.0
+    , plutus-tx ^>=1.65.0.0
 
 library plinth-validators
   import:          plinth-options, plutus-deps
