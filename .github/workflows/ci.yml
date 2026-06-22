@@ -83,3 +83,71 @@ jobs:
 
     # - name: Test uplc-ghc
     #   run: ./plinth-test.sh
+
+  windows:
+    name: x86_64-windows / ghc ${{ matrix.ghc }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ['9.6.7']
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+
+    # Git on Windows defaults to not creating symlinks; the submodules and
+    # bindist rely on them, so enable symlink support before checkout.
+    - name: Configure git for Windows
+      shell: bash
+      run: git config --global core.symlinks true
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # The pre-MSYS2 steps run in the default Git-for-Windows bash because the
+    # MSYS2 environment is not set up yet.
+    - name: Setup SSH for submodules
+      shell: bash
+      run: |
+        mkdir -p ~/.ssh
+        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
+        chmod 600 ~/.ssh/id_rsa
+        ssh-keyscan github.com >> ~/.ssh/known_hosts
+
+    - name: Init and update submodules
+      shell: bash
+      run: |
+       git submodule sync
+       # Shallow (single-commit) submodule clones: the build never needs
+       # submodule history, and these 29 submodules (notably plutus) carry a
+       # lot of it. --jobs fetches them in parallel. GitHub allows fetching
+       # the pinned SHA directly, so depth 1 works even when it isn't a
+       # branch tip.
+       git submodule update --init --recursive --depth 1 --jobs 4
+
+    # MINGW64 toolchain + the autotools/python/sphinx needed by the build.
+    # path-type: inherit keeps the Windows PATH (incl. the GHC/cabal installed
+    # below) visible inside the MSYS2 shell.
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: inherit
+        update: false
+        install: >-
+          autoconf automake make tar xz patch curl
+          mingw-w64-x86_64-python mingw-w64-x86_64-python-sphinx
+
+    - uses: haskell-actions/setup@v2
+      id: setup
+      name: Setup Haskell tools
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+        cabal-update: true
+
+    - name: Build uplc-ghc
+      run: ./plinth-build.sh
