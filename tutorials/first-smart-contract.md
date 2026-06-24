@@ -1,11 +1,14 @@
 ---
-title: Your first smart contract with Plinth
+title: Your first smart contract with Plinth (Linux)
 permalink: /tutorials/first-smart-contract/
 ---
 Before writing a real validator, it helps to get the whole toolchain working
 end to end with the simplest possible Plinth program: a function that adds two
 numbers. In this tutorial you will create a tiny project from scratch, compile
 it with `uplc-ghc`, run it, and read the Plutus Core it produced.
+
+This tutorial targets **Linux**. Windows and macOS walkthroughs will follow
+later.
 
 ## Before you start
 

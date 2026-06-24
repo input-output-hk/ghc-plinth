@@ -6,4 +6,5 @@ permalink: /tutorials/
 guaranteed-to-work experience so you can learn by doing. They are for newcomers
 who want to get started, not for looking up specific facts.
 
-- [Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %})
+- [Your first smart contract with Plinth (Linux)]({% link tutorials/first-smart-contract.md %})
+  &mdash; targets Linux; Windows and macOS walkthroughs will follow later.
