@@ -14,12 +14,14 @@ DEV_HADRIAN_ARGS="--docs=none"
 RELEASE_FLAVOUR="release"
 # Note [Lean CI flavour]
 # ~~~~~~~~~~~~~~~~~~~~~~~
-# debug_info/debug_ghc compile GHC and its libraries with DWARF (-g3), which
-# inflates the build tree 2-3x and is the main disk-space hog on CI runners.
-# They only help when debugging GHC itself, so the dev/CI flavour keeps just
-# "assertions" (cheap, still catches GHC/plugin bugs). Use RELEASE=1 for a
-# clean release build.
-DEV_FLAVOUR="release+assertions"
+# The dev/CI flavour is just "release":
+#  - debug_info/debug_ghc compile GHC and its libraries with DWARF (-g3), which
+#    inflates the build tree 2-3x and is the main disk-space hog on CI runners;
+#  - +assertions builds GHC with -DDEBUG, which slows compilation of GHC itself
+#    *and* of every package built with the resulting compiler (i.e. the Plinth
+#    test project). Dropping it keeps CI within its time budget.
+# Use RELEASE=1 for a clean release build (adds docs etc.).
+DEV_FLAVOUR="release"
 
 # platform-specific default configure arguments
 case "$UNAME_S" in
@@ -36,6 +38,7 @@ DEV_CONFIGURE_ARGS="$DEFAULT_CONFIGURE_ARGS"
 
 : ${REBUILD:=0} # set to 1 to force rebuild
 : ${RELEASE:=0} # set to 1 to build release version including documentation (more build dependencies)
+: ${BINDIST:=0} # set to 1 to produce the fixed-up uplc-ghc bindist + archive while keeping the dev (assertions) flavour
 
 # program locations
 : ${GHC:=$(command -v ghc-9.6.7 2>/dev/null || true)}
@@ -237,10 +240,12 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     # add to build dir (needed for testing, so always done)
     cp "$SRC_UPLC_GHC" "$DEST_UPLC_GHC"
 
-    # The bindist fixup below only matters for the shippable bindist, which is
-    # only produced for RELEASE=1. Skipping it on CI avoids duplicating the
-    # whole bindist tree on disk. See Note [Lean CI flavour].
-    if [ "$RELEASE" -ne 1 ]; then
+    # The bindist fixup below only matters for the shippable bindist, produced
+    # for RELEASE=1 (release flavour + docs) or BINDIST=1 (current flavour, e.g.
+    # the lean CI flavour - see Note [Lean CI flavour]). The CI test job consumes
+    # this bindist, so it builds with BINDIST=1. Otherwise skip the fixup to avoid
+    # duplicating the whole bindist tree on disk.
+    if [ "$RELEASE" -ne 1 ] && [ "$BINDIST" -ne 1 ]; then
         exit 0
     fi
 
@@ -285,11 +290,12 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     done
 )
 
-# create bindist archive after fixup (release only: the tar|xz is slow and
-# needs extra disk; CI only needs _build/stage1/bin/uplc-ghc for testing).
-if [ "$RELEASE" -eq 1 ]; then
+# create bindist archive after fixup. The tar|xz is slow and needs extra disk,
+# so only do it for a shippable bindist: RELEASE=1, or BINDIST=1 to hand the
+# bindist to the CI test job. -T0 lets xz use all cores to keep CI time down.
+if [ "$RELEASE" -eq 1 ] || [ "$BINDIST" -eq 1 ]; then
     echo "creating bindist archive..."
     BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
-    (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" > "$BINDIST_NAME.tar.xz")
+    (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" -T0 > "$BINDIST_NAME.tar.xz")
 fi
 

@@ -2,6 +2,11 @@
 set -euo pipefail
 
 : ${CLEAN:=0} # set to 1 to force rebuild
+# Number of parallel cabal jobs. Empty means "-j" (all cores). Compiling with
+# the Plinth plugin (Core -> PLC) is memory-heavy, so on RAM-constrained
+# machines (e.g. CI runners) several concurrent GHC processes can OOM. Set
+# JOBS=1 there to build packages serially.
+: ${JOBS:=}
 
 
 # build Plinth test project
@@ -13,10 +18,12 @@ case "$UNAME_S" in
     *)            EXE_EXT="" ;;
 esac
 
-GHC="$PWD/_build/stage1/bin/uplc-ghc${EXE_EXT}"
+# Default to the in-tree build; override GHC to point at an installed bindist
+# (e.g. the CI test job consumes the bindist produced by `BINDIST=1 plinth-build.sh`).
+: ${GHC:=$PWD/_build/stage1/bin/uplc-ghc${EXE_EXT}}
 
 if [ ! -x "$GHC" ]; then
-  echo "Plinth GHC not found. Please run plinth-build.sh first."
+  echo "Plinth GHC not found ($GHC). Please run plinth-build.sh first."
   exit 1
 fi
 
@@ -32,7 +39,7 @@ CABAL_ARGS="\
 	--logs-dir=_build/logs"
 
 CABAL_BUILD_ARGS="\
-	-j -w ${GHC} \
+	-j${JOBS} -w ${GHC} \
 	--builddir=_build/build \
 	--ghc-options=\"-fhide-source-paths\""
 
