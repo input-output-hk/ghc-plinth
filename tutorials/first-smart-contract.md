@@ -50,7 +50,7 @@ index-state:
 -- The Plinth libraries, from the fork uplc-ghc was built against.
 source-repository-package
   type: git
-  location: https://github.com/hsyl20/ghc-plinth-plutus
+  location: https://github.com/input-output-hk/ghc-plinth-plutus
   tag: 33decd91baf18e76927ffd97a6c3d0ab571bbdb6
   subdir: plutus-tx
           plutus-core
