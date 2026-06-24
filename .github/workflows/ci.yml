@@ -7,9 +7,15 @@ on:
     branches: [master, ghc-9.6-plinth]
   workflow_dispatch:
 
+# Least-privilege GITHUB_TOKEN: jobs only check out code (contents: read).
+# Submodules use a dedicated SSH key and artifacts use the Actions runtime
+# token, so no write scopes are needed.
+permissions:
+  contents: read
+
 jobs:
-  cabal:
-    name: ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+  plinth-build-linux:
+    name: plinth-build / ${{ matrix.os }} / ghc ${{ matrix.ghc }}
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
@@ -19,73 +25,119 @@ jobs:
 
     steps:
 
-    - name: Free disk space
-      uses: jlumbroso/free-disk-space@main
-      with:
-        # this might remove tools that are actually needed,
-        # if set to "true" but frees about 6 GB
-        tool-cache: false
-
-        # all of these default to true, but feel free to set to
-        # "false" if necessary for your workflow
-        android: true
-        dotnet: true
-        haskell: false
-        # left off: it is slow (~1-2 min) and the bulk of the build now lives
-        # on /mnt, so reclaiming large packages on / is not needed.
-        large-packages: false
-        docker-images: true
-        swap-storage: true
-
+    # checkout first: the local composite action (.github/actions/prepare) must
+    # be on disk before the runner can resolve it.
     - uses: actions/checkout@v4
       with:
         submodules: false
 
-    # The runner's workspace disk (/) has ~21 GB free; the ephemeral disk at
-    # /mnt has ~70 GB. Build everything under _build on /mnt to avoid running
-    # out of space. Both plinth-build.sh and plinth-test.sh write under _build.
-    # We bind-mount (rather than symlink) so _build stays a real directory:
-    # a symlinked build root can confuse path tracking in Hadrian/Cabal.
-    - name: Build on the large /mnt disk
-      run: |
-        sudo mkdir -p /mnt/_build
-        mkdir -p "$GITHUB_WORKSPACE/_build"
-        sudo mount --bind /mnt/_build "$GITHUB_WORKSPACE/_build"
-        sudo chown "$USER" "$GITHUB_WORKSPACE/_build"
-
-    - name: Setup SSH for submodules
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-
-    - name: Init and update submodules
-      run: |
-       git submodule sync
-       # Shallow (single-commit) submodule clones: the build never needs
-       # submodule history, and these 29 submodules (notably plutus) carry a
-       # lot of it. --jobs fetches them in parallel. GitHub allows fetching
-       # the pinned SHA directly, so depth 1 works even when it isn't a
-       # branch tip.
-       git submodule update --init --recursive --depth 1 --jobs 4
-
-    - uses: haskell-actions/setup@v2
-      id: setup
-      name: Setup Haskell tools
+    - uses: ./.github/actions/prepare
       with:
         ghc-version: ${{ matrix.ghc }}
-        cabal-version: "latest"
-        cabal-update: true
 
-    - name: Build uplc-ghc
-      run: ./plinth-build.sh
+    # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz archive) while
+    # keeping the lean dev flavour. The plinth-test job consumes that archive.
+    - name: Build uplc-ghc bindist
+      run: BINDIST=1 ./plinth-build.sh
 
+    - name: Upload uplc-ghc bindist
+      uses: actions/upload-artifact@v4
+      with:
+        # key by platform + GHC so multiple build matrix legs (or another job)
+        # never collide on the artifact name within a single run. See the
+        # matching download in the plinth-test job, which shares this matrix.
+        name: plinth-bindist-${{ matrix.os }}-${{ matrix.ghc }}
+        path: _build/bindist/*.tar.xz
+        retention-days: 1
+        # the archive is already xz-compressed; don't re-zip it
+        compression-level: 0
+
+  # plinth-test runs in its own job for a separate status check and timeout
+  # budget. It depends on `plinth-build-linux` (it can't run in parallel: it
+  # needs the built compiler), downloading the bindist archive instead of
+  # rebuilding GHC. Its matrix mirrors the build so the artifact-name key
+  # matches per leg.
+  plinth-test-linux:
+    name: plinth-test / ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    needs: plinth-build-linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        ghc: ['9.6.7']
+
+    steps:
+
+    # checkout first: the local composite action (.github/actions/prepare) must
+    # be on disk before the runner can resolve it. The prepare action also
+    # fetches submodules, which the test needs: plinth/test/cabal.project pulls
+    # plutus-tx/plutus-core/plutus-ledger-api from the plutus submodule.
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - uses: ./.github/actions/prepare
+      with:
+        ghc-version: ${{ matrix.ghc }}
+
+    # A single Plinth plugin (Core -> PLC) compile of a makeLift-heavy module
+    # (PlutusLedgerApi.V3.Contexts) spikes past the ~16 GB runner RAM and gets
+    # OOM-killed even with JOBS=1. Add a 16 GB swapfile on the large /mnt disk
+    # so the spike spills to swap and the compile completes.
+    - name: Add 16 GB swap
+      run: |
+        sudo fallocate -l 16G /mnt/swapfile
+        sudo chmod 600 /mnt/swapfile
+        sudo mkswap /mnt/swapfile
+        sudo swapon /mnt/swapfile
+        swapon --show
+        free -h
+
+    - name: Download uplc-ghc bindist
+      uses: actions/download-artifact@v4
+      with:
+        # matches the plinth-build upload name; both jobs share the same matrix.
+        name: plinth-bindist-${{ matrix.os }}-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # Install the bindist with the usual configure + make install; the bindist's
+    # wrappers/ dir (added by the BINDIST fixup) makes this produce bin/uplc-ghc.
+    # Each step is guarded so a missing artifact or failed install fails loudly
+    # here, not with a confusing error deep in the test.
+    - name: Install uplc-ghc bindist
+      run: |
+        shopt -s nullglob
+        archives=(_build/artifact/*.tar.xz)
+        if [ ${#archives[@]} -ne 1 ]; then
+          echo "error: expected exactly one bindist archive, found: ${archives[*]:-none}"
+          exit 1
+        fi
+        mkdir -p _build/bindist
+        echo "extracting ${archives[0]}"
+        tar --xz -xf "${archives[0]}" -C _build/bindist
+        bindirs=(_build/bindist/ghc-*)
+        if [ ${#bindirs[@]} -ne 1 ]; then
+          echo "error: expected one extracted bindist dir, found: ${bindirs[*]:-none}"
+          exit 1
+        fi
+        ( cd "${bindirs[0]}" && ./configure --prefix="$GITHUB_WORKSPACE/_build/install" && make install )
+        uplc="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc"
+        if [ ! -x "$uplc" ]; then
+          echo "error: $uplc missing or not executable after make install"
+          ls -l "$GITHUB_WORKSPACE/_build/install/bin" || true
+          exit 1
+        fi
+        rm -rf _build/artifact
+
+    # Build packages serially (JOBS=1): compiling with the Plinth plugin
+    # (Core -> PLC) is memory-heavy, and concurrent GHC processes OOM-kill the
+    # runner (seen mid-compile on PlutusLedgerApi.V3).
     - name: Test uplc-ghc
-      run: ./plinth-test.sh
+      run: JOBS=1 GHC="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc" ./plinth-test.sh
 
-  windows:
-    name: x86_64-windows / ghc ${{ matrix.ghc }}
+  plinth-build-windows:
+    name: plinth-build / windows-latest / ghc ${{ matrix.ghc }}
     runs-on: windows-latest
     strategy:
       fail-fast: false
@@ -107,16 +159,9 @@ jobs:
       with:
         submodules: false
 
-    # The pre-MSYS2 steps run in the default Git-for-Windows bash because the
-    # MSYS2 environment is not set up yet.
-    - name: Setup SSH for submodules
-      shell: bash
-      run: |
-        mkdir -p ~/.ssh
-        echo "${{ secrets.SUBMODULE_SSH_KEY }}" > ~/.ssh/id_rsa
-        chmod 600 ~/.ssh/id_rsa
-        ssh-keyscan github.com >> ~/.ssh/known_hosts
-
+    # The pre-MSYS2 step runs in the default Git-for-Windows bash because the
+    # MSYS2 environment is not set up yet. All submodules are public HTTPS, so
+    # no credentials are needed.
     - name: Init and update submodules
       shell: bash
       run: |

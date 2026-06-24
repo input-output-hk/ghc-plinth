@@ -1,0 +1,63 @@
+name: Prepare Linux build environment
+description: >-
+  Free disk space, bind-mount the large /mnt disk as _build, fetch submodules
+  and set up GHC/cabal. Shared by the cabal (build) and plinth-test jobs. The
+  repo must already be checked out so the runner can find this local action.
+
+inputs:
+  ghc-version:
+    description: GHC version passed to haskell-actions/setup
+    required: true
+
+runs:
+  using: composite
+  steps:
+
+  - name: Free disk space
+    uses: jlumbroso/free-disk-space@main
+    with:
+      # this might remove tools that are actually needed,
+      # if set to "true" but frees about 6 GB
+      tool-cache: false
+
+      # all of these default to true, but feel free to set to
+      # "false" if necessary for your workflow
+      android: true
+      dotnet: true
+      haskell: false
+      # left off: it is slow (~1-2 min) and the bulk of the build now lives
+      # on /mnt, so reclaiming large packages on / is not needed.
+      large-packages: false
+      docker-images: true
+      swap-storage: true
+
+  # The runner's workspace disk (/) has ~21 GB free; the ephemeral disk at
+  # /mnt has ~70 GB. Build everything under _build on /mnt to avoid running
+  # out of space. We bind-mount (rather than symlink) so _build stays a real
+  # directory: a symlinked build root can confuse path tracking in
+  # Hadrian/Cabal.
+  - name: Build on the large /mnt disk
+    shell: bash
+    run: |
+      sudo mkdir -p /mnt/_build
+      mkdir -p "$GITHUB_WORKSPACE/_build"
+      sudo mount --bind /mnt/_build "$GITHUB_WORKSPACE/_build"
+      sudo chown "$USER" "$GITHUB_WORKSPACE/_build"
+
+  - name: Init and update submodules
+    shell: bash
+    run: |
+     git submodule sync
+     # Shallow (single-commit) submodule clones: the build never needs
+     # submodule history, and these 29 submodules (notably plutus) carry a
+     # lot of it. --jobs fetches them in parallel. GitHub allows fetching
+     # the pinned SHA directly, so depth 1 works even when it isn't a
+     # branch tip.
+     git submodule update --init --recursive --depth 1 --jobs 4
+
+  - uses: haskell-actions/setup@v2
+    name: Setup Haskell tools
+    with:
+      ghc-version: ${{ inputs.ghc-version }}
+      cabal-version: "latest"
+      cabal-update: true
