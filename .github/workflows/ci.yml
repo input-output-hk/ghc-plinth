@@ -136,6 +136,169 @@ jobs:
     - name: Test uplc-ghc
       run: JOBS=1 GHC="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc" ./plinth-test.sh
 
+  # musl (Alpine) build, mirroring plinth-build-linux. GitHub runners are glibc
+  # and haskell-actions/setup only ships glibc GHC, so the toolchain + build run
+  # inside an alpine:3.20 container via `docker run` (with a musl boot-GHC from
+  # ghcup). The workspace is mounted in; host-level free-disk / submodule steps
+  # still run on the runner first. `docker run` (not a job-level `container:`)
+  # keeps those host steps working.
+  plinth-build-linux-musl:
+    name: plinth-build / ${{ matrix.os }} (musl) / ghc ${{ matrix.ghc }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        ghc: ['9.6.7']
+
+    steps:
+
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: false
+        large-packages: false
+        docker-images: true
+        swap-storage: true
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # The runner's workspace disk (/) is small; /mnt has ~70 GB. Bind-mount it as
+    # _build so the GHC build has room. docker -v is recursive, so this nested
+    # mount is visible inside the container at /workspace/_build.
+    - name: Build on the large /mnt disk
+      run: |
+        sudo mkdir -p /mnt/_build
+        mkdir -p "$GITHUB_WORKSPACE/_build"
+        sudo mount --bind /mnt/_build "$GITHUB_WORKSPACE/_build"
+        sudo chown "$USER" "$GITHUB_WORKSPACE/_build"
+
+    # The static plugin baked into uplc-ghc is built from the plutus submodule.
+    - name: Init and update submodules
+      run: |
+        git submodule sync
+        git submodule update --init --recursive --depth 1 --jobs 4
+
+    # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz). plinth-build.sh
+    # appends a -musl suffix to the archive name when run on musl libc.
+    - name: Build uplc-ghc bindist (Alpine/musl)
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
+          -e BINDIST=1 -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
+          alpine:3.20 sh -c '
+            set -eux
+            . ./.github/alpine-setup.sh
+            ./plinth-build.sh
+          '
+
+    - name: Upload uplc-ghc bindist (musl)
+      uses: actions/upload-artifact@v4
+      with:
+        name: plinth-bindist-musl-${{ matrix.ghc }}
+        path: _build/bindist/*.tar.xz
+        retention-days: 1
+        # the archive is already xz-compressed; don't re-zip it
+        compression-level: 0
+
+  # musl test, mirroring plinth-test-linux: consume the musl bindist, install it
+  # and run the test suite inside alpine:3.20. Depends on plinth-build-linux-musl.
+  plinth-test-linux-musl:
+    name: plinth-test / ${{ matrix.os }} (musl) / ghc ${{ matrix.ghc }}
+    needs: plinth-build-linux-musl
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        ghc: ['9.6.7']
+
+    steps:
+
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        android: true
+        dotnet: true
+        haskell: false
+        large-packages: false
+        docker-images: true
+        swap-storage: true
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # plinth/test/cabal.project pulls plutus-tx/plutus-core/plutus-ledger-api
+    # from the plutus submodule.
+    - name: Init and update submodules
+      run: |
+        git submodule sync
+        git submodule update --init --recursive --depth 1 --jobs 4
+
+    # A single Plinth plugin compile of a makeLift-heavy module
+    # (PlutusLedgerApi.V3.Contexts) spikes past the ~16 GB runner RAM and gets
+    # OOM-killed even with JOBS=1. Add a 16 GB swapfile on the large /mnt disk
+    # so the spike spills to swap; the container shares the host's memory+swap.
+    - name: Add 16 GB swap
+      run: |
+        sudo fallocate -l 16G /mnt/swapfile
+        sudo chmod 600 /mnt/swapfile
+        sudo mkswap /mnt/swapfile
+        sudo swapon /mnt/swapfile
+        swapon --show
+        free -h
+
+    - name: Download uplc-ghc bindist (musl)
+      uses: actions/download-artifact@v4
+      with:
+        name: plinth-bindist-musl-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # Install the musl bindist (configure + make install) and run the test suite
+    # inside Alpine. Mirrors the glibc test job's install guards (exactly one
+    # archive, exactly one extracted dir, executable check) and JOBS=1.
+    - name: Install and test uplc-ghc (Alpine/musl)
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
+          -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
+          alpine:3.20 sh -c '
+            set -eux
+            . ./.github/alpine-setup.sh
+
+            archives=$(ls _build/artifact/*.tar.xz)
+            n=$(echo "$archives" | wc -l)
+            if [ "$n" -ne 1 ]; then
+              echo "error: expected exactly one bindist archive, found: ${archives:-none}"
+              exit 1
+            fi
+            mkdir -p _build/bindist
+            echo "extracting $archives"
+            tar --xz -xf "$archives" -C _build/bindist
+            bindirs=$(ls -d _build/bindist/ghc-*)
+            if [ "$(echo "$bindirs" | wc -l)" -ne 1 ]; then
+              echo "error: expected one extracted bindist dir, found: ${bindirs:-none}"
+              exit 1
+            fi
+            ( cd "$bindirs" && ./configure --prefix=/workspace/_build/install && make install )
+            uplc=/workspace/_build/install/bin/uplc-ghc
+            if [ ! -x "$uplc" ]; then
+              echo "error: $uplc missing or not executable after make install"
+              ls -l /workspace/_build/install/bin || true
+              exit 1
+            fi
+            rm -rf _build/artifact
+
+            JOBS=1 GHC="$uplc" ./plinth-test.sh
+          '
+
   plinth-build-windows:
     name: plinth-build / windows-latest / ghc ${{ matrix.ghc }}
     runs-on: windows-latest

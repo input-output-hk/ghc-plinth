@@ -295,7 +295,13 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
 # bindist to the CI test job. -T0 lets xz use all cores to keep CI time down.
 if [ "$RELEASE" -eq 1 ] || [ "$BINDIST" -eq 1 ]; then
     echo "creating bindist archive..."
-    BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM"
+    # Append a -musl suffix to the bindist name on musl libc so glibc and musl
+    # bindists for the same platform don't collide.
+    LIBC_SUFFIX=""
+    case "$UNAME_S" in
+        Linux*) if ldd --version 2>&1 | grep -qi musl; then LIBC_SUFFIX="-musl"; fi ;;
+    esac
+    BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM${LIBC_SUFFIX}"
     (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" -T0 > "$BINDIST_NAME.tar.xz")
 fi
 
