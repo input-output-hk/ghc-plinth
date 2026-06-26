@@ -27,8 +27,13 @@ if [ ! -x "$GHC" ]; then
   exit 1
 fi
 
+# Resolve GHC to an absolute path: below we cd into plinth/test before invoking
+# cabal, so a GHC path relative to the repo root (e.g. the bindist consumed by
+# the CI test job) would otherwise be resolved against the wrong directory and
+# cabal would fail with "Cannot find the program 'ghc'".
 case "$UNAME_S" in
-    MINGW*|MSYS*) GHC=$(cygpath -w "$GHC") ;;
+    MINGW*|MSYS*) GHC=$(cygpath -wa "$GHC") ;;
+    *)            GHC=$(cd "$(dirname "$GHC")" && pwd)/$(basename "$GHC") ;;
 esac
 
 CABAL_PROJECT_ARGS="--project-file=cabal.project"

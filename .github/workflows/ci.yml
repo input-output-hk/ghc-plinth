@@ -357,5 +357,120 @@ jobs:
         cabal-version: "latest"
         cabal-update: true
 
-    - name: Build uplc-ghc
-      run: ./plinth-build.sh
+    # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz archive); the
+    # plinth-test-windows job consumes that archive instead of rebuilding.
+    - name: Build uplc-ghc bindist
+      run: BINDIST=1 ./plinth-build.sh
+
+    - name: Upload uplc-ghc bindist
+      uses: actions/upload-artifact@v4
+      with:
+        # key by GHC so this never collides with another job's artifact within a
+        # run. See the matching download in the plinth-test-windows job.
+        name: plinth-bindist-windows-${{ matrix.ghc }}
+        path: _build/bindist/*.tar.xz
+        retention-days: 1
+        # the archive is already xz-compressed; don't re-zip it
+        compression-level: 0
+
+  # plinth-test on Windows, mirroring plinth-test-linux: consume the bindist
+  # produced by plinth-build-windows, install it (configure + make install under
+  # MSYS2) and run the test suite. Depends on plinth-build-windows.
+  plinth-test-windows:
+    name: plinth-test / windows-latest / ghc ${{ matrix.ghc }}
+    needs: plinth-build-windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ['9.6.7']
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+
+    # Git on Windows defaults to not creating symlinks; the submodules and the
+    # bindist's wrappers/ dir rely on them, so enable symlink support first.
+    - name: Configure git for Windows
+      shell: bash
+      run: git config --global core.symlinks true
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # The pre-MSYS2 step runs in the default Git-for-Windows bash because the
+    # MSYS2 environment is not set up yet. plinth/test/cabal.project pulls
+    # plutus-tx/plutus-core/plutus-ledger-api from the plutus submodule.
+    - name: Init and update submodules
+      shell: bash
+      run: |
+       git submodule sync
+       # Shallow (single-commit) submodule clones: the build never needs
+       # submodule history. --jobs fetches them in parallel.
+       git submodule update --init --recursive --depth 1 --jobs 4
+
+    # MINGW64 toolchain incl. tar/xz to extract the bindist. path-type: inherit
+    # keeps the Windows PATH (incl. the cabal installed below) visible.
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: inherit
+        update: false
+        install: >-
+          autoconf automake make tar xz patch curl
+          mingw-w64-x86_64-python mingw-w64-x86_64-python-sphinx
+
+    # plinth-test.sh invokes cabal, so cabal must be on PATH. (The boot GHC this
+    # also installs is unused by the test.)
+    - uses: haskell-actions/setup@v2
+      id: setup
+      name: Setup Haskell tools
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+        cabal-update: true
+
+    - name: Download uplc-ghc bindist
+      uses: actions/download-artifact@v4
+      with:
+        # matches the plinth-build-windows upload name.
+        name: plinth-bindist-windows-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # Unlike Unix, the Windows GHC bindist has no configure/make install: it is
+    # relocatable, so we just extract it and run bin/uplc-ghc.exe in place.
+    - name: Extract uplc-ghc bindist
+      run: |
+        shopt -s nullglob
+        archives=(_build/artifact/*.tar.xz)
+        if [ ${#archives[@]} -ne 1 ]; then
+          echo "error: expected exactly one bindist archive, found: ${archives[*]:-none}"
+          exit 1
+        fi
+        mkdir -p _build/install
+        echo "extracting ${archives[0]}"
+        tar --xz -xf "${archives[0]}" -C _build/install
+        bindirs=(_build/install/ghc-*)
+        if [ ${#bindirs[@]} -ne 1 ]; then
+          echo "error: expected one extracted bindist dir, found: ${bindirs[*]:-none}"
+          exit 1
+        fi
+        uplc="${bindirs[0]}/bin/uplc-ghc.exe"
+        if [ ! -x "$uplc" ]; then
+          echo "error: $uplc missing or not executable in extracted bindist"
+          ls -l "${bindirs[0]}/bin" || true
+          exit 1
+        fi
+        rm -rf _build/artifact
+
+    # Build packages serially (JOBS=1): compiling with the Plinth plugin
+    # (Core -> PLC) is memory-heavy. Pass GHC as an absolute path: plinth-test.sh
+    # cd's into plinth/test before invoking cabal, so a repo-root-relative path
+    # would be resolved against the wrong directory.
+    - name: Test uplc-ghc
+      run: |
+        bindirs=(_build/install/ghc-*)
+        JOBS=1 GHC="$(pwd)/${bindirs[0]}/bin/uplc-ghc.exe" ./plinth-test.sh
