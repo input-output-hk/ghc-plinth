@@ -474,3 +474,139 @@ jobs:
       run: |
         bindirs=(_build/install/ghc-*)
         JOBS=1 GHC="$(pwd)/${bindirs[0]}/bin/uplc-ghc.exe" ./plinth-test.sh
+
+  # macOS build, mirroring plinth-build-linux. macOS uses the Unix bindist
+  # (configure + make install), so the build is much like Linux; the
+  # differences are: no /mnt large-disk mount (the runner's disk is large
+  # enough for the lean flavour) and autoconf/automake come from Homebrew
+  # rather than the base image. Runs on Apple Silicon (aarch64-darwin).
+  plinth-build-macos:
+    name: plinth-build / macos-15 / ghc ${{ matrix.ghc }}
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ['9.6.7']
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # The static plugin baked into uplc-ghc is built from the plutus submodule.
+    - name: Init and update submodules
+      run: |
+        git submodule sync
+        # Shallow (single-commit) submodule clones: the build never needs
+        # submodule history. --jobs fetches them in parallel.
+        git submodule update --init --recursive --depth 1 --jobs 4
+
+    # The GHC source build's boot step runs autoreconf, which needs
+    # autoconf/automake; they are not in the macOS runner image. The lean
+    # BINDIST flavour builds with --docs=none, so no sphinx is needed.
+    - name: Install autotools (macOS)
+      run: brew install autoconf automake
+
+    - uses: haskell-actions/setup@v2
+      id: setup
+      name: Setup Haskell tools
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+        cabal-update: true
+
+    # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz archive); the
+    # plinth-test-macos job consumes that archive instead of rebuilding.
+    - name: Build uplc-ghc bindist
+      run: BINDIST=1 ./plinth-build.sh
+
+    - name: Upload uplc-ghc bindist
+      uses: actions/upload-artifact@v4
+      with:
+        # key by GHC so this never collides with another job's artifact within a
+        # run. See the matching download in the plinth-test-macos job.
+        name: plinth-bindist-macos-${{ matrix.ghc }}
+        path: _build/bindist/*.tar.xz
+        retention-days: 1
+        # the archive is already xz-compressed; don't re-zip it
+        compression-level: 0
+
+  # plinth-test on macOS, mirroring plinth-test-linux: consume the bindist
+  # produced by plinth-build-macos, install it (configure + make install) and
+  # run the test suite. Depends on plinth-build-macos.
+  plinth-test-macos:
+    name: plinth-test / macos-15 / ghc ${{ matrix.ghc }}
+    needs: plinth-build-macos
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ['9.6.7']
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # plinth/test/cabal.project pulls plutus-tx/plutus-core/plutus-ledger-api
+    # from the plutus submodule.
+    - name: Init and update submodules
+      run: |
+        git submodule sync
+        git submodule update --init --recursive --depth 1 --jobs 4
+
+    # plinth-test.sh invokes cabal, so cabal must be on PATH. (The boot GHC this
+    # also installs is unused by the test.)
+    - uses: haskell-actions/setup@v2
+      id: setup
+      name: Setup Haskell tools
+      with:
+        ghc-version: ${{ matrix.ghc }}
+        cabal-version: "latest"
+        cabal-update: true
+
+    - name: Download uplc-ghc bindist
+      uses: actions/download-artifact@v4
+      with:
+        # matches the plinth-build-macos upload name.
+        name: plinth-bindist-macos-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # Install the bindist with the usual configure + make install; the bindist's
+    # wrappers/ dir (added by the BINDIST fixup) makes this produce bin/uplc-ghc.
+    # Each step is guarded so a missing artifact or failed install fails loudly
+    # here, not with a confusing error deep in the test.
+    - name: Install uplc-ghc bindist
+      run: |
+        shopt -s nullglob
+        archives=(_build/artifact/*.tar.xz)
+        if [ ${#archives[@]} -ne 1 ]; then
+          echo "error: expected exactly one bindist archive, found: ${archives[*]:-none}"
+          exit 1
+        fi
+        mkdir -p _build/bindist
+        echo "extracting ${archives[0]}"
+        tar --xz -xf "${archives[0]}" -C _build/bindist
+        bindirs=(_build/bindist/ghc-*)
+        if [ ${#bindirs[@]} -ne 1 ]; then
+          echo "error: expected one extracted bindist dir, found: ${bindirs[*]:-none}"
+          exit 1
+        fi
+        ( cd "${bindirs[0]}" && ./configure --prefix="$GITHUB_WORKSPACE/_build/install" && make install )
+        uplc="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc"
+        if [ ! -x "$uplc" ]; then
+          echo "error: $uplc missing or not executable after make install"
+          ls -l "$GITHUB_WORKSPACE/_build/install/bin" || true
+          exit 1
+        fi
+        rm -rf _build/artifact
+
+    # Build packages serially (JOBS=1): compiling with the Plinth plugin
+    # (Core -> PLC) is memory-heavy. A single makeLift-heavy compile
+    # (PlutusLedgerApi.V3.Contexts) spikes well past the runner's RAM; unlike
+    # the Linux job (explicit swapfile) macOS grows its swap dynamically, so the
+    # spike spills to swap on its own and no swap-setup step is needed here.
+    - name: Test uplc-ghc
+      run: JOBS=1 GHC="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc" ./plinth-test.sh
