@@ -11,9 +11,9 @@ repository cardano-haskell-packages
 
 index-state:
   -- Bump both the following dates if you need newer packages from Hackage
-  , hackage.haskell.org 2025-09-21T21:31:06Z
+  , hackage.haskell.org 2026-06-22T23:30:49Z
   -- Bump this if you need newer packages from CHaP
-  , cardano-haskell-packages 2026-01-24T11:25:12Z
+  , cardano-haskell-packages 2026-06-18T17:45:00Z
 
 packages:
   ./.
@@ -72,4 +72,27 @@ package sodium-clib
   -- and the link phase fails with cryptic error messages.
   configure-options: --enable-pie=no
 
-constraints: mempack == 0.1.2.0
+-- See the matching block in ../cabal.project for the rationale. plutus-core
+-- 1.66 needs aeson >=2.3 (hence the index-state bump), which drags the crypto
+-- stack across breaking renames the pinned cardano-base fork predates.
+constraints:
+  -- https://github.com/IntersectMBO/plutus/pull/7236
+  , setup.optparse-applicative >=0.19.0.0
+  , mempack ^>=0.1.2.0
+  , crypton ==1.0.4
+  , memory ==0.18.0
+
+allow-newer:
+  , deriving-aeson:aeson
+  , microstache:aeson
+  , turtle:containers
+  , turtle:optparse-applicative
+  -- https://github.com/tweag/HaskellR/pull/420
+  , inline-r:singletons-th
+  , inline-r:aeson
+  , inline-r:text
+  , inline-r:template-haskell
+  , inline-r:deepseq
+  , inline-r:bytestring
+  , inline-r:containers
+  , inline-r:primitive

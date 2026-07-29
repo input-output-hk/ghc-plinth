@@ -52,9 +52,9 @@ common plutus-deps
   -- plutus-tx (PlutusTx.Plugin.Utils), and the compiler is built into
   -- uplc-ghc, so no dependency on plutus-tx-plugin is needed anymore.
   build-depends:
-    , plutus-core ^>=1.65.0.0
-    , plutus-ledger-api ^>=1.65.0.0
-    , plutus-tx ^>=1.65.0.0
+    , plutus-core ^>=1.66.0.0
+    , plutus-ledger-api ^>=1.66.0.0
+    , plutus-tx ^>=1.66.0.0
 
 library plinth-validators
   import:          plinth-options, plutus-deps
