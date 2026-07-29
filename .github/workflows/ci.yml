@@ -615,6 +615,187 @@ jobs:
     - name: Test uplc-ghc
       run: JOBS=1 GHC="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc" ./plinth-test.sh
 
+  # ghcup install tests: verify each platform's bindist installs cleanly as the
+  # custom `plinth` ghcup tool -- the same path end users take -- on every push,
+  # not just on tags. Each mirrors its plinth-test-* sibling but installs via
+  # ghcup + generate-ghcup-metadata.py (file:// metadata) instead of a bare
+  # configure+make, so a broken dlInstallSpec / generator / metadata schema is
+  # caught in the PR that introduces it. plinth-ghcup-test.sh does the work; it
+  # needs only the bindist tarball + python3 + a ghcup >= 0.2.1.0 (no GHC
+  # rebuild, no submodules -- the sample it compiles is plain Haskell).
+  plinth-ghcup-test-linux:
+    name: plinth-ghcup-test / ${{ matrix.os }} / ghc ${{ matrix.ghc }}
+    needs: plinth-build-linux
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        ghc: ['9.6.7']
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - name: Download uplc-ghc bindist
+      uses: actions/download-artifact@v4
+      with:
+        name: plinth-bindist-${{ matrix.os }}-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # A stock ghcup for this architecture; the installer DSL needs >= 0.2.1.0
+    # (plinth-ghcup-test.sh capability-gates on it).
+    - name: Install stock ghcup
+      run: |
+        set -eux
+        mkdir -p "$HOME/.local/bin"
+        curl -fL "https://downloads.haskell.org/~ghcup/$(uname -m)-linux-ghcup" \
+          -o "$HOME/.local/bin/ghcup"
+        chmod +x "$HOME/.local/bin/ghcup"
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Install and test uplc-ghc via ghcup
+      run: BINDIST_DIR=_build/artifact ./plinth-ghcup-test.sh
+
+  plinth-ghcup-test-linux-musl:
+    name: plinth-ghcup-test / ${{ matrix.os }} (musl) / ghc ${{ matrix.ghc }}
+    needs: plinth-build-linux-musl
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, ubuntu-24.04-arm]
+        ghc: ['9.6.7']
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - name: Download uplc-ghc bindist (musl)
+      uses: actions/download-artifact@v4
+      with:
+        name: plinth-bindist-musl-${{ matrix.os }}-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # Run inside Alpine so the musl uplc-ghc can execute. Unlike the build/test
+    # jobs we do NOT source alpine-setup.sh: that bootstraps a full boot GHC +
+    # cabal we would never use here. Instead install just the deps needed to run
+    # uplc-ghc and link the sample, and download the ghcup binary directly --
+    # the same x86_64/aarch64-linux ghcup the official installer uses on Alpine.
+    #
+    # coreutils/findutils/grep are the GNU tools the bindist's `make install`
+    # (which ghcup runs for us) is exercised with upstream; busybox's applets
+    # differ in flag support, so don't rely on them for that path.
+    #
+    # EXPECT_MUSL=1 asserts the artifact really is the musl bindist: the ghcup
+    # platform is derived from the bindist name, and a musl bindist mislabelled
+    # as glibc installs fine here while being broken for users on Alpine.
+    - name: Install and test uplc-ghc via ghcup (Alpine/musl)
+      run: |
+        docker run --rm \
+          -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
+          -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
+          alpine:3.20 sh -c '
+            set -eux
+            apk add --no-cache bash build-base coreutils curl findutils grep \
+              gmp-dev ncurses-dev python3 tar xz
+            mkdir -p "$HOME/.local/bin"
+            curl -fL "https://downloads.haskell.org/~ghcup/$(uname -m)-linux-ghcup" \
+              -o "$HOME/.local/bin/ghcup"
+            chmod +x "$HOME/.local/bin/ghcup"
+            BINDIST_DIR=_build/artifact GHCUP_BIN="$HOME/.local/bin/ghcup" \
+              EXPECT_MUSL=1 bash ./plinth-ghcup-test.sh
+          '
+
+  plinth-ghcup-test-macos:
+    name: plinth-ghcup-test / macos-15 / ghc ${{ matrix.ghc }}
+    needs: plinth-build-macos
+    runs-on: macos-15
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ['9.6.7']
+
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - name: Download uplc-ghc bindist
+      uses: actions/download-artifact@v4
+      with:
+        name: plinth-bindist-macos-${{ matrix.ghc }}
+        path: _build/artifact
+
+    # macos-15 is Apple Silicon (aarch64-apple-darwin).
+    - name: Install stock ghcup
+      run: |
+        set -eux
+        mkdir -p "$HOME/.local/bin"
+        curl -fL "https://downloads.haskell.org/~ghcup/aarch64-apple-darwin-ghcup" \
+          -o "$HOME/.local/bin/ghcup"
+        chmod +x "$HOME/.local/bin/ghcup"
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Install and test uplc-ghc via ghcup
+      run: BINDIST_DIR=_build/artifact ./plinth-ghcup-test.sh
+
+  plinth-ghcup-test-windows:
+    name: plinth-ghcup-test / windows-latest / ghc ${{ matrix.ghc }}
+    needs: plinth-build-windows
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        ghc: ['9.6.7']
+    defaults:
+      run:
+        shell: msys2 {0}
+
+    steps:
+
+    # The bindist / ghcup use symlinks; enable them before checkout.
+    - name: Configure git for Windows
+      shell: bash
+      run: git config --global core.symlinks true
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # python3 (for generate-ghcup-metadata.py) + tar/xz/curl to fetch ghcup and
+    # unpack. cygpath (used by plinth-ghcup-test.sh for native/MSYS path
+    # translation) is part of the base MSYS2 install.
+    - name: Setup MSYS2
+      uses: msys2/setup-msys2@v2
+      with:
+        msystem: MINGW64
+        path-type: inherit
+        update: false
+        install: >-
+          tar xz curl mingw-w64-x86_64-python
+
+    - name: Download uplc-ghc bindist
+      uses: actions/download-artifact@v4
+      with:
+        name: plinth-bindist-windows-${{ matrix.ghc }}
+        path: _build/artifact
+
+    - name: Install stock ghcup
+      run: |
+        set -eux
+        mkdir -p "$HOME/.local/bin"
+        curl -fL "https://downloads.haskell.org/~ghcup/x86_64-mingw64-ghcup.exe" \
+          -o "$HOME/.local/bin/ghcup.exe"
+
+    - name: Install and test uplc-ghc via ghcup
+      run: BINDIST_DIR=_build/artifact GHCUP_BIN="$HOME/.local/bin/ghcup.exe" ./plinth-ghcup-test.sh
+
   # Note [ghcup release channel]
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
   # On a v* tag, publish the per-platform bindists as a GitHub Release and
@@ -634,11 +815,13 @@ jobs:
   release:
     name: release / ghcup channel
     if: startsWith(github.ref, 'refs/tags/')
+    # Gate publishing on the per-platform ghcup install tests (which transitively
+    # require the build jobs and their uploaded bindist artifacts).
     needs:
-      - plinth-build-linux
-      - plinth-build-linux-musl
-      - plinth-build-windows
-      - plinth-build-macos
+      - plinth-ghcup-test-linux
+      - plinth-ghcup-test-linux-musl
+      - plinth-ghcup-test-windows
+      - plinth-ghcup-test-macos
     runs-on: ubuntu-latest
     # Overrides the top-level `contents: read`: this job creates a Release and
     # pushes the regenerated channel to gh-pages.
@@ -669,50 +852,8 @@ jobs:
         # ghcup tool version: the tag without the leading 'v'.
         echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
 
-    # A stock ghcup for the pre-publish validation gate. Download the latest
-    # released ghcup; the installer DSL for custom tools needs >= 0.2.1.0.
-    - name: Install stock ghcup
-      run: |
-        set -eux
-        mkdir -p "$HOME/.local/bin"
-        curl -fL https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup \
-          -o "$HOME/.local/bin/ghcup"
-        chmod +x "$HOME/.local/bin/ghcup"
-        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-        "$HOME/.local/bin/ghcup" --version
-
-    # Validation gate: generate metadata with file:// URLs to the downloaded
-    # tarballs and actually install the linux bindist as the plinth tool. This
-    # exercises the installer DSL (configure + make install + symlinks) before
-    # anything is published.
-    - name: Validate ghcup install (linux bindist)
-      run: |
-        set -eux
-        python3 generate-ghcup-metadata.py \
-          --version "$VERSION" \
-          --base-url "file://$PWD/dist" \
-          --db "$RUNNER_TEMP/validate.versions.json" \
-          --output "$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
-          --set-latest \
-          dist/*.tar.xz
-        # Capability gate: a ghcup that predates the installer DSL (< 0.2.1.0)
-        # won't recognize the custom `plinth` tool. Fail loudly with an upgrade
-        # hint rather than with a cryptic error deep in `install`.
-        if ! ghcup --url-source "file://$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
-               list -t plinth 2>/dev/null | grep -q plinth; then
-          echo "error: this ghcup ($(ghcup --version)) does not recognize the custom"
-          echo "       'plinth' tool. The installer DSL needs ghcup >= 0.2.1.0."
-          exit 1
-        fi
-        export GHCUP_INSTALL_BASE_PREFIX="$RUNNER_TEMP/ghcup-validate"
-        export XDG_CONFIG_HOME="$RUNNER_TEMP/ghcup-validate/config"
-        export XDG_DATA_HOME="$RUNNER_TEMP/ghcup-validate/data"
-        mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
-        ghcup --url-source "file://$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
-          install plinth "$VERSION"
-        ghcup --url-source "file://$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
-          set plinth "$VERSION"
-        "$GHCUP_INSTALL_BASE_PREFIX/.ghcup/bin/uplc-ghc" --version
+    # The install is already validated end-to-end on every platform by the
+    # plinth-ghcup-test-* jobs this job `needs`, so no re-validation here.
 
     # Publish the Release with all tarballs. Create it if missing, otherwise
     # (re-)upload the assets.
