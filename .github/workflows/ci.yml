@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize]
   push:
     branches: [master, ghc-9.6-plinth]
+    # Pushing a v* tag builds every platform (as on a branch push) and then the
+    # `release` job publishes a GitHub Release + updates the ghcup channel. See
+    # Note [ghcup release channel] on the release job below.
+    tags: ['v*']
   workflow_dispatch:
 
 # Least-privilege GITHUB_TOKEN: jobs only check out code (contents: read).
@@ -610,3 +614,145 @@ jobs:
     # spike spills to swap on its own and no swap-setup step is needed here.
     - name: Test uplc-ghc
       run: JOBS=1 GHC="$GITHUB_WORKSPACE/_build/install/bin/uplc-ghc" ./plinth-test.sh
+
+  # Note [ghcup release channel]
+  # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+  # On a v* tag, publish the per-platform bindists as a GitHub Release and
+  # (re)generate the ghcup channel metadata on the gh-pages branch. uplc-ghc is
+  # distributed as a custom third-party ghcup tool named `plinth`, installable
+  # with a stock ghcup >= 0.2.1.0 (installer DSL). Users then run:
+  #   ghcup config add-release-channel \
+  #     https://input-output-hk.github.io/ghc-plinth/ghcup-plinth.yaml
+  #   ghcup install plinth <version>
+  #
+  # The generator (generate-ghcup-metadata.py) accumulates every released
+  # version into gh-pages/ghcup-plinth.versions.json and re-emits the channel
+  # YAML, so old versions stay installable. Before publishing, we validate the
+  # metadata end-to-end by installing plinth from a file:// copy of it (real
+  # download + configure + make + symlink), decoupled from the not-yet-public
+  # release URLs.
+  release:
+    name: release / ghcup channel
+    if: startsWith(github.ref, 'refs/tags/')
+    needs:
+      - plinth-build-linux
+      - plinth-build-linux-musl
+      - plinth-build-windows
+      - plinth-build-macos
+    runs-on: ubuntu-latest
+    # Overrides the top-level `contents: read`: this job creates a Release and
+    # pushes the regenerated channel to gh-pages.
+    permissions:
+      contents: write
+    env:
+      TAG: ${{ github.ref_name }}
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # Collect every platform's bindist tarball into dist/. Each artifact holds a
+    # single ghc-<ver>-<platform>[-musl].tar.xz with a distinct name, so
+    # merge-multiple flattens them without collisions.
+    - name: Download all bindists
+      uses: actions/download-artifact@v4
+      with:
+        pattern: plinth-bindist-*
+        path: dist
+        merge-multiple: true
+
+    - name: List bindists and set version
+      run: |
+        set -eux
+        ls -l dist/*.tar.xz
+        # ghcup tool version: the tag without the leading 'v'.
+        echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+
+    # A stock ghcup for the pre-publish validation gate. Download the latest
+    # released ghcup; the installer DSL for custom tools needs >= 0.2.1.0.
+    - name: Install stock ghcup
+      run: |
+        set -eux
+        mkdir -p "$HOME/.local/bin"
+        curl -fL https://downloads.haskell.org/~ghcup/x86_64-linux-ghcup \
+          -o "$HOME/.local/bin/ghcup"
+        chmod +x "$HOME/.local/bin/ghcup"
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+        "$HOME/.local/bin/ghcup" --version
+
+    # Validation gate: generate metadata with file:// URLs to the downloaded
+    # tarballs and actually install the linux bindist as the plinth tool. This
+    # exercises the installer DSL (configure + make install + symlinks) before
+    # anything is published.
+    - name: Validate ghcup install (linux bindist)
+      run: |
+        set -eux
+        python3 generate-ghcup-metadata.py \
+          --version "$VERSION" \
+          --base-url "file://$PWD/dist" \
+          --db "$RUNNER_TEMP/validate.versions.json" \
+          --output "$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
+          --set-latest \
+          dist/*.tar.xz
+        # Capability gate: a ghcup that predates the installer DSL (< 0.2.1.0)
+        # won't recognize the custom `plinth` tool. Fail loudly with an upgrade
+        # hint rather than with a cryptic error deep in `install`.
+        if ! ghcup --url-source "file://$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
+               list -t plinth 2>/dev/null | grep -q plinth; then
+          echo "error: this ghcup ($(ghcup --version)) does not recognize the custom"
+          echo "       'plinth' tool. The installer DSL needs ghcup >= 0.2.1.0."
+          exit 1
+        fi
+        export GHCUP_INSTALL_BASE_PREFIX="$RUNNER_TEMP/ghcup-validate"
+        export XDG_CONFIG_HOME="$RUNNER_TEMP/ghcup-validate/config"
+        export XDG_DATA_HOME="$RUNNER_TEMP/ghcup-validate/data"
+        mkdir -p "$XDG_CONFIG_HOME" "$XDG_DATA_HOME"
+        ghcup --url-source "file://$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
+          install plinth "$VERSION"
+        ghcup --url-source "file://$RUNNER_TEMP/ghcup-plinth-validate.yaml" \
+          set plinth "$VERSION"
+        "$GHCUP_INSTALL_BASE_PREFIX/.ghcup/bin/uplc-ghc" --version
+
+    # Publish the Release with all tarballs. Create it if missing, otherwise
+    # (re-)upload the assets.
+    - name: Create GitHub Release
+      env:
+        GH_TOKEN: ${{ github.token }}
+      run: |
+        set -eux
+        if ! gh release view "$TAG" >/dev/null 2>&1; then
+          gh release create "$TAG" \
+            --title "uplc-ghc $VERSION" \
+            --notes "Plinth standalone compiler (uplc-ghc) bindists for $VERSION. Install via ghcup: see README." \
+            dist/*.tar.xz
+        else
+          gh release upload "$TAG" dist/*.tar.xz --clobber
+        fi
+
+    # Regenerate the channel on gh-pages with the real Release download URLs and
+    # push it. The generator merges into the existing versions DB so previously
+    # released versions remain in the channel.
+    - name: Check out gh-pages
+      uses: actions/checkout@v4
+      with:
+        ref: gh-pages
+        path: gh-pages-out
+
+    - name: Regenerate and publish ghcup channel
+      run: |
+        set -eux
+        python3 generate-ghcup-metadata.py \
+          --version "$VERSION" \
+          --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}" \
+          --db gh-pages-out/ghcup-plinth.versions.json \
+          --output gh-pages-out/ghcup-plinth.yaml \
+          --release-day "$(date -u +%Y-%m-%d)" \
+          --set-latest \
+          dist/*.tar.xz
+        cd gh-pages-out
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git add ghcup-plinth.yaml ghcup-plinth.versions.json
+        git commit -m "ghcup channel: publish plinth ${VERSION} (${TAG})" || echo "no changes to commit"
+        git push

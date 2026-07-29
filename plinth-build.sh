@@ -290,18 +290,54 @@ DEST_UPLC_GHC="$BASE/_build/stage1/bin/uplc-ghc${EXE_EXT}"
     done
 )
 
+# Note [Detecting musl]
+# ~~~~~~~~~~~~~~~~~~~~~
+# Don't detect musl with `ldd --version | grep musl`: musl's ldd has no
+# --version, so it prints its banner (which does contain "musl") and exits 1.
+# Under `set -o pipefail` the pipeline then reports failure even though grep
+# matched, so musl was silently detected as glibc. glibc's ldd exits 0, which is
+# why only the musl side was broken.
+#
+# A missing -musl suffix is not cosmetic: generate-ghcup-metadata.py derives the
+# ghcup platform from the bindist name, so the musl bindist was published as
+# Linux_UnknownLinux. ghcup deliberately does not fall back from Alpine to
+# UnknownLinux (a glibc bindist cannot run on musl), so `ghcup install plinth`
+# failed on Alpine with "Unable to find a download". The two bindists would also
+# collide under the same file name in the GitHub Release.
+#
+# The suffix has to rename the bindist *directory* too, not just the archive:
+# hadrian names the directory after the target platform only, so suffixing only
+# the archive name left `tar` with no such directory to pack ("Cannot stat"), and
+# the top-level directory inside the tarball is exactly what ghcup is told to
+# descend into (dlSubdir).
+
 # create bindist archive after fixup. The tar|xz is slow and needs extra disk,
 # so only do it for a shippable bindist: RELEASE=1, or BINDIST=1 to hand the
 # bindist to the CI test job. -T0 lets xz use all cores to keep CI time down.
 if [ "$RELEASE" -eq 1 ] || [ "$BINDIST" -eq 1 ]; then
     echo "creating bindist archive..."
     # Append a -musl suffix to the bindist name on musl libc so glibc and musl
-    # bindists for the same platform don't collide.
+    # bindists for the same platform don't collide. See Note [Detecting musl].
     LIBC_SUFFIX=""
     case "$UNAME_S" in
-        Linux*) if ldd --version 2>&1 | grep -qi musl; then LIBC_SUFFIX="-musl"; fi ;;
+        Linux*)
+            ldd_out=$(ldd --version 2>&1 || true)
+            case "$ldd_out" in *musl*) LIBC_SUFFIX="-musl" ;; esac
+            ;;
     esac
-    BINDIST_NAME="ghc-$VERSION-$TARGET_PLATFORM${LIBC_SUFFIX}"
+    # hadrian's binary-dist-dir names the directory after the target platform
+    # only, so rename it to carry the suffix rather than just naming the archive:
+    # the tarball's top-level directory has to match the archive name, since
+    # that is what generate-ghcup-metadata.py records as ghcup's dlSubdir.
+    # Guarded on the source existing so re-running over an already-renamed
+    # bindist keeps it instead of deleting it.
+    HADRIAN_BINDIST="ghc-$VERSION-$TARGET_PLATFORM"
+    BINDIST_NAME="${HADRIAN_BINDIST}${LIBC_SUFFIX}"
+    if [ "$BINDIST_NAME" != "$HADRIAN_BINDIST" ] \
+       && [ -d "$BASE/_build/bindist/$HADRIAN_BINDIST" ]; then
+        rm -rf "$BASE/_build/bindist/$BINDIST_NAME"
+        mv "$BASE/_build/bindist/$HADRIAN_BINDIST" "$BASE/_build/bindist/$BINDIST_NAME"
+    fi
     (cd "$BASE/_build/bindist" && "$TAR" -cf - "$BINDIST_NAME" | "$XZ" -T0 > "$BINDIST_NAME.tar.xz")
 fi
 
