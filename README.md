@@ -15,6 +15,34 @@ See the Plinth documentation:
  - [Plutus / Plinth GitHub repository][plutus-repo]
  - [Plinth project template][plinth-template]
 
+Installing via ghcup
+====================
+
+The Plinth compiler `uplc-ghc` is distributed as a custom [ghcup][ghcup] tool
+named `plinth`. It installs *alongside* your normal GHC (it never replaces the
+`ghc` on your `PATH`). This needs **ghcup >= 0.2.1.0** (which added support for
+third-party tools); upgrade with `ghcup upgrade` if needed.
+
+Add the release channel once, then install and select a version:
+
+    $ ghcup config add-release-channel https://input-output-hk.github.io/ghc-plinth/ghcup-plinth.yaml
+    $ ghcup install plinth latest
+    $ ghcup set plinth latest          # puts uplc-ghc on PATH
+
+This provides `uplc-ghc`, both unversioned and version-suffixed
+(`uplc-ghc-<version>`). The bindist's other tools (`ghc-pkg`, `haddock`, ...)
+stay inside the installation directory rather than being linked onto your `PATH`,
+so they cannot shadow the ones from your normal GHC. Point `cabal` at the
+compiler to build a Plinth project:
+
+    $ cabal build -w uplc-ghc
+
+`ghcup list -t plinth` shows the available versions. Prebuilt bindists are
+published as GitHub Releases for x86_64/aarch64 Linux (glibc and musl), macOS
+(Apple Silicon), and Windows; ghcup picks the right one for your platform.
+
+  [ghcup]: https://www.haskell.org/ghcup/ "ghcup"
+
 The text below is the upstream GHC README.
 
 This is the source tree for [GHC][1], a compiler and interactive
