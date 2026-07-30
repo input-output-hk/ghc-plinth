@@ -1,8 +1,11 @@
-<!-- Master artwork for the site favicons. The plinth/pedestal mirrors the
-     header logo (_includes/svg/logo.svg) but is filled white on the theme
-     accent tile (#fc4d50) so it stays legible down to 16x16. PNG/ICO
-     favicons are rendered from this file; do not edit the generated assets
-     by hand. -->
+<!-- Flat master artwork for the plinth mark: a white pedestal on the theme
+     accent tile (#fc4d50). This is the geometry the header logo
+     (_includes/svg/logo.svg) and the Safari pinned tab still use, and the
+     reference the 3D mark was matched against.
+
+     The raster favicons are no longer rendered from this file -- they come from
+     the POV-Ray scene in _logo/, via _logo/make-icons.py. Either way, do not
+     edit the generated assets by hand. -->
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="12" fill="#fc4d50"/>
   <g fill="#ffffff">

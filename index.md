@@ -2,6 +2,11 @@
 title: Overview
 permalink: /
 ---
+<p style="text-align: center; margin: 0 0 1.5rem;">
+  <img src="{{ '/assets/images/plinth-wordmark.png' | relative_url }}"
+       alt="Plinth" style="width: 100%; max-width: 620px;">
+</p>
+
 Documentation for the **Plinth** compiler, a language for writing on-chain and
 off-chain code for the [Cardano][cardano] blockchain. Plinth (formerly Plutus
 Tx) is a subset of [Haskell](https://www.haskell.org/) compiled to **Plutus

@@ -1,7 +1,8 @@
-<!-- Plinth logo: a white plinth/pedestal on the theme accent tile, matching
-     the site favicon (assets/images/favicon-source.svg). Shadows the TeXt
-     theme's default logo. Same 0..64 coordinate geometry as the favicon,
-     scaled down to the 24px header brand mark. -->
+<!-- Plinth logo: a white plinth/pedestal on the theme accent tile. Shadows the
+     TeXt theme's default logo. Deliberately still the flat artwork from
+     assets/images/favicon-source.svg rather than the 3D mark in _logo/: at the
+     24px header size the rendered shading is invisible, and the SVG stays crisp
+     at any pixel ratio. -->
 <svg version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink"
      x="0px" y="0px" width="24px" height="24px" viewBox="0 0 64 64">
   <rect width="64" height="64" rx="12" fill="#fc4d50"/>
