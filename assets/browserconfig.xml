@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Windows tile configuration, overriding the one the TeXt theme ships (which
+     points at the theme's own default tiles and its own TileColor). Tile images
+     here are rendered from the POV-Ray scene in _logo/.
+
+     src paths are resolved relative to this file, i.e. relative to /assets/, so
+     they are bare filenames and need no baseurl. Note also that when a
+     browserconfig.xml is present Windows ignores the msapplication-* meta tags,
+     which is how the theme's stale #ffc40d TileColor gets overridden. -->
+<browserconfig>
+  <msapplication>
+    <tile>
+      <square70x70logo src="mstile-70x70.png"/>
+      <square150x150logo src="mstile-150x150.png"/>
+      <wide310x150logo src="mstile-310x150.png"/>
+      <square310x310logo src="mstile-310x310.png"/>
+      <TileColor>#fc4d50</TileColor>
+    </tile>
+  </msapplication>
+</browserconfig>

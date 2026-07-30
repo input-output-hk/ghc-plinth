@@ -19,7 +19,7 @@ that it came from Plinth.
 
 ## The big picture
 
-![Plinth compiles Haskell source down to UPLC; everything after the UPLC boundary is shared by any UPLC script.](/assets/images/uplc-boundary.svg)
+![Plinth compiles Haskell source down to UPLC; everything after the UPLC boundary is shared by any UPLC script.]({{ '/assets/images/uplc-boundary.svg' | relative_url }})
 
 Above the boundary is language-specific. Below the boundary is where
 [other languages]({% link explanation/languages.md %}) &mdash; Plutarch, Aiken,

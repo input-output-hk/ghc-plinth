@@ -15,6 +15,10 @@ Outputs, named to drop straight into the site's assets directory:
     android-chrome-192x192.png   192
     android-chrome-512x512.png   512
     favicon.ico                   16, 32, 48
+    mstile-70x70.png              70   Windows tiles, square corners
+    mstile-150x150.png           150
+    mstile-310x310.png           310
+    mstile-310x150.png           310x150, the wide tile
     <stem>-rounded.png          full size, for READMEs and slides
 """
 
@@ -35,6 +39,16 @@ PNG_SIZES = {
     "android-chrome-512x512.png": 512,
 }
 ICO_SIZES = [(16, 16), (32, 32), (48, 48)]
+
+# Windows tiles. These keep their hard corners -- Windows draws them as squares
+# on a TileColor background -- so they come off the raw render, not the rounded
+# one. Only the sizes assets/browserconfig.xml actually references.
+TILE_SQUARES = {
+    "mstile-70x70.png": 70,
+    "mstile-150x150.png": 150,
+    "mstile-310x310.png": 310,
+}
+TILE_WIDE = ("mstile-310x150.png", 310, 150)
 
 
 def rounded_mask(size: int) -> Image.Image:
@@ -65,6 +79,22 @@ def main(argv: list[str]) -> int:
         out = src.with_name(prefix + name)
         tile.resize((size, size), Image.LANCZOS).save(out, optimize=True)
         written.append((out.name, size))
+
+    # Windows tiles, square and wide. The wide one is the square tile centred on
+    # a canvas of the tile colour, sampled from the render's own corner so the
+    # join is invisible.
+    square = Image.open(src).convert("RGB")
+    for name, size in TILE_SQUARES.items():
+        out = src.with_name(prefix + name)
+        square.resize((size, size), Image.LANCZOS).save(out, optimize=True)
+        written.append((out.name, size))
+
+    name, wide_w, wide_h = TILE_WIDE
+    canvas = Image.new("RGB", (wide_w, wide_h), square.getpixel((2, 2)))
+    canvas.paste(square.resize((wide_h, wide_h), Image.LANCZOS), ((wide_w - wide_h) // 2, 0))
+    out = src.with_name(prefix + name)
+    canvas.save(out, optimize=True)
+    written.append((out.name, f"{wide_w}x{wide_h}"))
 
     ico = src.with_name(prefix + "favicon.ico")
     tile.save(ico, sizes=ICO_SIZES)
