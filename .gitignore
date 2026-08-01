@@ -1,6 +1,11 @@
 # Jekyll build output
 _site/
 
+# Intermediates from _logo/make-anim.sh -- the encoded clip is committed, the
+# 80 rendered frames and the low-res timing preview are not
+_logo/frames/
+_logo/draft.webm
+
 # Local preview (bundler); GitHub Pages builds the site itself
 .bundle/
 vendor/
