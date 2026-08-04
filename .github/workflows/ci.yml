@@ -5,11 +5,24 @@ on:
     types: [opened, synchronize]
   push:
     branches: [master, ghc-9.6-plinth]
-    # Pushing a v* tag builds every platform (as on a branch push) and then the
-    # `release` job publishes a GitHub Release + updates the ghcup channel. See
-    # Note [ghcup release channel] on the release job below.
-    tags: ['v*']
+  # Releases are cut from here: run the workflow with a release_version to build
+  # and test that version, and tick `publish` to have the release job tag it and
+  # publish it once everything has passed. See Note [ghcup release channel].
   workflow_dispatch:
+    inputs:
+      release_version:
+        description: >-
+          Build as a release stamped with this version (e.g. 9.6.166.1) instead
+          of the usual dated snapshot version. Leave empty for an ordinary build.
+        required: false
+        default: ''
+      publish:
+        description: >-
+          Tag and publish that version once every build and test job has passed.
+          Leave off to rehearse a release without publishing anything.
+        type: boolean
+        required: false
+        default: false
 
 # Least-privilege GITHUB_TOKEN: jobs only check out code (contents: read).
 # Submodules use a dedicated SSH key and artifacts use the Actions runtime
@@ -17,7 +30,55 @@ on:
 permissions:
   contents: read
 
+env:
+  # The version being released ("9.6.166.1", or "v9.6.166.1" -- the steps below
+  # strip the "v"), empty on ordinary pushes and PRs. It is passed to
+  # plinth-build.sh as RELEASE_VERSION, which stamps the compiler with exactly
+  # that version instead of the usual <base>.<date>. See Note [Release
+  # versioning] in plinth-build.sh.
+  REQUESTED_VERSION: ${{ github.event.inputs.release_version || '' }}
+
 jobs:
+  # Reject an unreleasable request in seconds instead of after a full matrix
+  # build. The release job repeats none of this: it inherits the verdict by
+  # depending on this job. See Note [ghcup release channel].
+  release-precheck:
+    name: release-precheck
+    if: ${{ inputs.publish }}
+    runs-on: ubuntu-latest
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    - name: Check the requested release version
+      run: |
+        set -eu
+        VERSION="${REQUESTED_VERSION#v}"
+        if [ -z "$VERSION" ]; then
+          echo "error: publish was requested without a release_version"
+          exit 1
+        fi
+        # The same rule plinth-build.sh applies when stamping the compiler, so a
+        # version it would reject never reaches the build. See Note [Release
+        # versioning] there.
+        BASE_VERSION=$(sed -n 's/^AC_INIT(\[[^]]*\], *\[\([^]]*\)\].*/\1/p' configure.ac)
+        case "$VERSION" in
+          "$BASE_VERSION"|"$BASE_VERSION".*) ;;
+          *)
+            echo "error: $VERSION does not extend the version in configure.ac ($BASE_VERSION)"
+            exit 1
+            ;;
+        esac
+        # Tags are created by the release job, so an existing one means this
+        # version was already released.
+        if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null 2>&1; then
+          echo "error: v$VERSION is already released"
+          exit 1
+        fi
+        echo "releasing $VERSION from $GITHUB_REF_NAME ($GITHUB_SHA)"
+
   plinth-build-linux:
     name: plinth-build / ${{ matrix.os }} / ghc ${{ matrix.ghc }}
     runs-on: ${{ matrix.os }}
@@ -41,8 +102,10 @@ jobs:
 
     # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz archive) while
     # keeping the lean dev flavour. The plinth-test job consumes that archive.
+    # RELEASE_VERSION is empty except on a release build, where it pins the
+    # version; see Note [Release versioning] in plinth-build.sh.
     - name: Build uplc-ghc bindist
-      run: BINDIST=1 ./plinth-build.sh
+      run: RELEASE_VERSION="${REQUESTED_VERSION#v}" BINDIST=1 ./plinth-build.sh
 
     - name: Upload uplc-ghc bindist
       uses: actions/upload-artifact@v4
@@ -195,6 +258,7 @@ jobs:
         docker run --rm \
           -v "$GITHUB_WORKSPACE:/workspace" -w /workspace \
           -e BINDIST=1 -e LANG=C.UTF-8 -e LC_ALL=C.UTF-8 \
+          -e RELEASE_VERSION="${REQUESTED_VERSION#v}" \
           alpine:3.20 sh -c '
             set -eux
             . ./.github/alpine-setup.sh
@@ -364,7 +428,7 @@ jobs:
     # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz archive); the
     # plinth-test-windows job consumes that archive instead of rebuilding.
     - name: Build uplc-ghc bindist
-      run: BINDIST=1 ./plinth-build.sh
+      run: RELEASE_VERSION="${REQUESTED_VERSION#v}" BINDIST=1 ./plinth-build.sh
 
     - name: Upload uplc-ghc bindist
       uses: actions/upload-artifact@v4
@@ -523,7 +587,7 @@ jobs:
     # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz archive); the
     # plinth-test-macos job consumes that archive instead of rebuilding.
     - name: Build uplc-ghc bindist
-      run: BINDIST=1 ./plinth-build.sh
+      run: RELEASE_VERSION="${REQUESTED_VERSION#v}" BINDIST=1 ./plinth-build.sh
 
     - name: Upload uplc-ghc bindist
       uses: actions/upload-artifact@v4
@@ -798,37 +862,50 @@ jobs:
 
   # Note [ghcup release channel]
   # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-  # On a v* tag, publish the per-platform bindists as a GitHub Release and
-  # (re)generate the ghcup channel metadata on the gh-pages branch. uplc-ghc is
-  # distributed as a custom third-party ghcup tool named `plinth`, installable
-  # with a stock ghcup >= 0.2.1.0 (installer DSL). Users then run:
+  # Once every build and test job has passed, tag the revision, publish the
+  # per-platform bindists as a GitHub Release and (re)generate the ghcup channel
+  # metadata on the ghcup-channel branch (see Note [Tagging a release] below).
+  # uplc-ghc is distributed as a custom third-party ghcup tool named `plinth`,
+  # installable with a stock ghcup >= 0.2.1.0 (installer DSL). Users then run:
   #   ghcup config add-release-channel \
-  #     https://input-output-hk.github.io/ghc-plinth/ghcup-plinth.yaml
+  #     https://raw.githubusercontent.com/input-output-hk/ghc-plinth/ghcup-channel/ghcup-plinth.yaml
   #   ghcup install plinth <version>
   #
-  # The generator (generate-ghcup-metadata.py) accumulates every released
-  # version into gh-pages/ghcup-plinth.versions.json and re-emits the channel
-  # YAML, so old versions stay installable. Before publishing, we validate the
-  # metadata end-to-end by installing plinth from a file:// copy of it (real
-  # download + configure + make + symlink), decoupled from the not-yet-public
-  # release URLs.
+  # The channel lives on its own orphan branch, served straight from
+  # raw.githubusercontent.com (which is also where ghcup fetches its own
+  # metadata). Publishing is then a plain git push, and the branch is CI's alone,
+  # so a release can never conflict with anything else being pushed.
+  # raw.githubusercontent.com caches for 5 minutes (max-age=300), so a fresh
+  # release can take that long to become visible to ghcup.
+  #
+  # The generator (generate-ghcup-metadata.py) accumulates every released version
+  # into ghcup-plinth.versions.json on that branch and re-emits the channel YAML,
+  # so old versions stay installable. Before publishing, we validate the metadata
+  # end-to-end by installing plinth from a file:// copy of it (real download +
+  # configure + make + symlink), decoupled from the not-yet-public release URLs.
   release:
     name: release / ghcup channel
-    if: startsWith(github.ref, 'refs/tags/')
-    # Gate publishing on the per-platform ghcup install tests (which transitively
-    # require the build jobs and their uploaded bindist artifacts).
+    if: ${{ inputs.publish }}
+    # Gate publishing on everything that exercises the bindists: the ghcup
+    # install tests and the Plinth test suites, on every platform. Both sets
+    # transitively require the build jobs and their uploaded artifacts, so the
+    # builds don't need listing here. Without the plinth-test-* jobs a release
+    # could ship a compiler whose test suite failed.
     needs:
+      - release-precheck
       - plinth-ghcup-test-linux
       - plinth-ghcup-test-linux-musl
       - plinth-ghcup-test-windows
       - plinth-ghcup-test-macos
+      - plinth-test-linux
+      - plinth-test-linux-musl
+      - plinth-test-windows
+      - plinth-test-macos
     runs-on: ubuntu-latest
-    # Overrides the top-level `contents: read`: this job creates a Release and
-    # pushes the regenerated channel to gh-pages.
+    # Overrides the top-level `contents: read`: this job creates the tag and the
+    # Release, and pushes the regenerated channel to the ghcup-channel branch.
     permissions:
       contents: write
-    env:
-      TAG: ${{ github.ref_name }}
     steps:
 
     - uses: actions/checkout@v4
@@ -849,11 +926,38 @@ jobs:
       run: |
         set -eux
         ls -l dist/*.tar.xz
-        # ghcup tool version: the tag without the leading 'v'.
-        echo "VERSION=${TAG#v}" >> "$GITHUB_ENV"
+        # The version released, and the ghcup tool version. The build jobs
+        # stamped the compiler with the same string (RELEASE_VERSION), so every
+        # tarball must be named for it; if not, the channel would advertise a
+        # version no bindist provides. See Note [Release versioning] in
+        # plinth-build.sh.
+        VERSION="${REQUESTED_VERSION#v}"
+        for f in dist/*.tar.xz; do
+          case "$(basename "$f")" in
+            "ghc-$VERSION-"*) ;;
+            *) echo "error: $f is not a bindist for version $VERSION"; exit 1 ;;
+          esac
+        done
+        echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+        echo "TAG=v$VERSION" >> "$GITHUB_ENV"
 
     # The install is already validated end-to-end on every platform by the
     # plinth-ghcup-test-* jobs this job `needs`, so no re-validation here.
+
+    # Note [Tagging a release]
+    # ~~~~~~~~~~~~~~~~~~~~~~~~
+    # The tag is created here, at the end, rather than being what starts the
+    # release: everything above has already built and tested this exact commit,
+    # so a v* tag exists only for a revision that passed. A failed or abandoned
+    # release attempt leaves no trace in the tag list, and the checked-out commit
+    # is $GITHUB_SHA -- the revision the run was dispatched on.
+    - name: Tag the release
+      run: |
+        set -eux
+        git config user.name "github-actions[bot]"
+        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+        git tag -a "$TAG" -m "uplc-ghc $VERSION" "$GITHUB_SHA"
+        git push origin "$TAG"
 
     # Publish the Release with all tarballs. Create it if missing, otherwise
     # (re-)upload the assets.
@@ -871,29 +975,57 @@ jobs:
           gh release upload "$TAG" dist/*.tar.xz --clobber
         fi
 
-    # Regenerate the channel on gh-pages with the real Release download URLs and
-    # push it. The generator merges into the existing versions DB so previously
-    # released versions remain in the channel.
-    - name: Check out gh-pages
-      uses: actions/checkout@v4
-      with:
-        ref: gh-pages
-        path: gh-pages-out
-
-    - name: Regenerate and publish ghcup channel
+    # Regenerate the channel with the real Release download URLs and push it to
+    # the ghcup-channel branch, which is what users point ghcup at. The generator
+    # merges into the existing versions DB so previously released versions remain
+    # in the channel. See Note [ghcup release channel].
+    #
+    # The branch holds nothing but the channel files, so it is built up in a
+    # standalone repo rather than checked out: cloning it into a working tree of
+    # this (very large) repo would mean deleting the whole GHC tree first. It is
+    # created as an orphan on the first release, so no manual setup is needed.
+    - name: Publish the ghcup channel
+      env:
+        GH_TOKEN: ${{ github.token }}
+        CHANNEL_BRANCH: ghcup-channel
+      # no -x: the push URL carries the token (GitHub masks it, but don't print it)
       run: |
-        set -eux
+        set -eu
+        mkdir channel-out
+        (
+          cd channel-out
+          git init -q -b "$CHANNEL_BRANCH"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}"
+          if git fetch -q --depth 1 origin "$CHANNEL_BRANCH" 2>/dev/null; then
+            git reset -q --hard FETCH_HEAD
+          else
+            echo "first release: creating the $CHANNEL_BRANCH branch"
+          fi
+        )
         python3 generate-ghcup-metadata.py \
           --version "$VERSION" \
           --base-url "https://github.com/${GITHUB_REPOSITORY}/releases/download/${TAG}" \
-          --db gh-pages-out/ghcup-plinth.versions.json \
-          --output gh-pages-out/ghcup-plinth.yaml \
+          --db channel-out/ghcup-plinth.versions.json \
+          --output channel-out/ghcup-plinth.yaml \
           --release-day "$(date -u +%Y-%m-%d)" \
           --set-latest \
           dist/*.tar.xz
-        cd gh-pages-out
-        git config user.name "github-actions[bot]"
-        git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-        git add ghcup-plinth.yaml ghcup-plinth.versions.json
-        git commit -m "ghcup channel: publish plinth ${VERSION} (${TAG})" || echo "no changes to commit"
-        git push
+        cat > channel-out/README.md <<EOF
+        # ghcup channel for the Plinth compiler
+
+        This branch only carries the ghcup metadata for \`uplc-ghc\`; it is not
+        part of the source tree. Both files are generated by CI on a \`v*\` tag
+        (see the \`release\` job in \`.github/workflows/ci.yml\`) -- do not edit
+        them by hand.
+
+            ghcup config add-release-channel https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${CHANNEL_BRANCH}/ghcup-plinth.yaml
+            ghcup install plinth latest
+        EOF
+        cd channel-out
+        git add -A
+        git commit -q -m "ghcup channel: publish plinth ${VERSION} (${TAG})" \
+          || echo "no changes to commit"
+        git push -q origin "HEAD:$CHANNEL_BRANCH"
+        echo "published https://raw.githubusercontent.com/${GITHUB_REPOSITORY}/${CHANNEL_BRANCH}/ghcup-plinth.yaml"
