@@ -39,6 +39,7 @@ DEV_CONFIGURE_ARGS="$DEFAULT_CONFIGURE_ARGS"
 : ${REBUILD:=0} # set to 1 to force rebuild
 : ${RELEASE:=0} # set to 1 to build release version including documentation (more build dependencies)
 : ${BINDIST:=0} # set to 1 to produce the fixed-up uplc-ghc bindist + archive while keeping the dev (assertions) flavour
+: ${RELEASE_VERSION:=} # set to e.g. 9.6.166.1 to stamp the compiler with exactly that version. See Note [Release versioning]
 
 # program locations
 : ${GHC:=$(command -v ghc-9.6.7 2>/dev/null || true)}
@@ -132,6 +133,48 @@ if [ ! -d plutus/plutus-tx ]; then
   echo "plutus submodule not found, please fetch submodules"
   exit 1
 fi
+
+# Note [Release versioning]
+# ~~~~~~~~~~~~~~~~~~~~~~~~~
+# Two unrelated things are spelled RELEASE:
+#  - this script's RELEASE=1 picks the release flavour (docs, more build deps);
+#  - configure's RELEASE=YES/NO decides whether the version in configure.ac gets
+#    a fourth component appended (the date of the last commit, i.e. a snapshot
+#    version) or is used verbatim.
+# They must not be confused, so the value handed to configure is always passed
+# explicitly below and never inherited from the environment.
+#
+# configure.ac carries the three-component base (9.6.<plinth>) and a plain build
+# is stamped 9.6.166.<date>. A release build sets RELEASE_VERSION=9.6.166.1: the
+# base is rewritten to that full version and RELEASE=YES keeps configure from
+# appending anything, so the compiler reports exactly the released version.
+#
+# The release counter lives in the release tag (CI passes RELEASE_VERSION=${TAG#v})
+# rather than in configure.ac, because a committed four-component base would make
+# every later snapshot build five components (9.6.166.1.20260803) -- one more
+# than the tools accept.
+CONFIGURE_RELEASE=NO
+if [ -n "$RELEASE_VERSION" ]; then
+  BASE_VERSION=$(sed -n 's/^AC_INIT(\[[^]]*\], *\[\([^]]*\)\].*/\1/p' configure.ac)
+  case "$RELEASE_VERSION" in
+    # already rewritten by an earlier run of this script: nothing to do
+    "$BASE_VERSION") ;;
+    "$BASE_VERSION".*)
+      echo "stamping release version $RELEASE_VERSION (was $BASE_VERSION)"
+      sed "s/^\(AC_INIT(\[[^]]*\], *\[\)$BASE_VERSION\(\]\)/\1$RELEASE_VERSION\2/" \
+        configure.ac > configure.ac.tmp
+      mv configure.ac.tmp configure.ac
+      # configure.ac changed, so ./configure has to be regenerated and re-run
+      rm -f ./configure ./mk/config.h
+      ;;
+    *)
+      echo "error: RELEASE_VERSION=$RELEASE_VERSION does not extend the version in configure.ac ($BASE_VERSION)"
+      exit 1
+      ;;
+  esac
+  CONFIGURE_RELEASE=YES
+fi
+
 # build boot GHC
 DID_BOOT_OR_CONFIGURE=0
 if [ ! -x ./configure ] || [ "$REBUILD" -eq 1 ]; then
@@ -146,7 +189,8 @@ if [ ! -e ./mk/config.h ] || [ "$REBUILD" -eq 1 ]; then
   if [ "$IS_WINDOWS" -eq 1 ]; then
       export SSL_CERT_FILE="$(cygpath -w /mingw64/etc/ssl/certs/ca-bundle.crt)"
   fi
-  ./configure $CONFIGURE_ARGS
+  # RELEASE is configure's own knob, not this script's. See Note [Release versioning].
+  RELEASE="$CONFIGURE_RELEASE" ./configure $CONFIGURE_ARGS
   )
   DID_BOOT_OR_CONFIGURE=1
 fi
@@ -192,6 +236,15 @@ STAGE="stage-plinth"
 BOOT_GHC="$BASE/_build/stage1/bin/ghc"
 TARGET_PLATFORM=$("$BOOT_GHC" --print-target-platform)
 VERSION=$("$BOOT_GHC" --numeric-version)
+
+# The bindist name, and hence the version ghcup advertises, is derived from this.
+# If it doesn't match the release tag, the channel would point at a version no
+# tarball provides, so stop here rather than publish that.
+if [ -n "$RELEASE_VERSION" ] && [ "$VERSION" != "$RELEASE_VERSION" ]; then
+  echo "error: built compiler reports version $VERSION, expected $RELEASE_VERSION"
+  echo "       (stale _build? re-run with REBUILD=1)"
+  exit 1
+fi
 
 CABAL_PROJECT_ARGS="--project-file=cabal.project"
 
