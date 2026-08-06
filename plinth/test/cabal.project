@@ -9,11 +9,14 @@ repository cardano-haskell-packages
     c00aae8461a256275598500ea0e187588c35a5d5d7454fb57eac18d9edb86a56
     d4a35cd3121aa00d18544bb0ac01c3e1691d618f462c46129271bccf39f7e8ee
 
+-- Keep the solver set-up here (index-states, cardano-base pin, constraints,
+-- allow-newer) in sync with the website tutorial and how-to/use, which show
+-- the same stack to end users.
 index-state:
   -- Bump both the following dates if you need newer packages from Hackage
-  , hackage.haskell.org 2026-06-22T23:30:49Z
+  , hackage.haskell.org 2026-08-06T04:37:23Z
   -- Bump this if you need newer packages from CHaP
-  , cardano-haskell-packages 2026-06-18T17:45:00Z
+  , cardano-haskell-packages 2026-08-05T05:00:53Z
 
 packages:
   ./.
@@ -33,13 +36,8 @@ source-repository-package
     type: git
     location: https://github.com/hsyl20/cardano-base
     subdir: cardano-crypto-class
-    tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
-
-source-repository-package
-    type: git
-    location: https://github.com/hsyl20/cardano-base
-    subdir: cardano-crypto-praos
-    tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
+            cardano-crypto-praos
+    tag: 055ebbcc73e1cb234f1fd3fa237a4fb087130183
 
 source-repository-package
     type: git
@@ -72,15 +70,11 @@ package sodium-clib
   -- and the link phase fails with cryptic error messages.
   configure-options: --enable-pie=no
 
--- See the matching block in ../cabal.project for the rationale. plutus-core
--- 1.66 needs aeson >=2.3 (hence the index-state bump), which drags the crypto
--- stack across breaking renames the pinned cardano-base fork predates.
+-- Mirror the upstream plutus cabal.project solver directives (the submodule's
+-- own cabal.project is not used by this build).
 constraints:
   -- https://github.com/IntersectMBO/plutus/pull/7236
   , setup.optparse-applicative >=0.19.0.0
-  , mempack ^>=0.1.2.0
-  , crypton ==1.0.4
-  , memory ==0.18.0
 
 allow-newer:
   , deriving-aeson:aeson
