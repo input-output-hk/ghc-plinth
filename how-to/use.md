@@ -3,11 +3,19 @@ title: Use uplc-ghc in a project
 permalink: /how-to/use/
 ---
 
-The recommended way to use the Plinth standalone compiler is to set its path once in `cabal.project`.
+The recommended way to use the Plinth standalone compiler is to set it once in
+`cabal.project`. If you [installed it via ghcup]({% link how-to/build.md %})
+(the recommended way), `uplc-ghc` is on `PATH` and its name alone is enough:
+
+```haskell
+with-compiler: uplc-ghc
+packages: .
+```
+
+For a compiler built from source, give the path to the binary instead:
 
 ```haskell
 with-compiler: /path/to/uplc-ghc
-packages: .
 ```
 
 The same file also needs the Cardano package repository (CHaP), which provides
@@ -41,7 +49,7 @@ are neither bundled with the compiler nor taken from CHaP. Pull them from the
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/ghc-plinth-plutus
-  tag: 33decd91baf18e76927ffd97a6c3d0ab571bbdb6
+  tag: 2e582ecde824238f927322d208740322eada8115
   subdir: plutus-tx
           plutus-core
           plutus-tx-plugin
@@ -49,7 +57,9 @@ source-repository-package
 
 Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler
 and these libraries are released together as a matched set, built from the same
-commit.
+commit. The commit above matches release 9.6.166.1 (the current ghcup
+`latest`); for a different `uplc-ghc`, use the plutus commit it was built
+from.
 
 In addition you may want to add the following `source-repository-package` blocks
 that build the C crypto libraries used by Cardano (`libsodium`, `secp256k1`,

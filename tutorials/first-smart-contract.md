@@ -12,10 +12,12 @@ later.
 
 ## Before you start
 
-You need a built `uplc-ghc`. If you have not built it yet, follow
+You need `uplc-ghc` installed. If you do not have it yet, follow
 [Install Plinth standalone compiler]({% link how-to/build.md %}) first &mdash;
-this tutorial waits for you here. Note where the `uplc-ghc` binary ended up;
-throughout this tutorial, replace `/path/to/uplc-ghc` with its actual path.
+this tutorial waits for you here. If you installed it via ghcup (the
+recommended way), the binary is simply `uplc-ghc` on your `PATH`: wherever
+this tutorial says `/path/to/uplc-ghc`, write plain `uplc-ghc` instead. If
+you built from source, use the path of the binary the build produced.
 
 You will also need a recent `cabal` (3.8 or newer) on your `PATH`.
 
@@ -54,7 +56,7 @@ index-state:
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/ghc-plinth-plutus
-  tag: 33decd91baf18e76927ffd97a6c3d0ab571bbdb6
+  tag: 2e582ecde824238f927322d208740322eada8115
   subdir: plutus-tx
           plutus-core
           plutus-tx-plugin
@@ -98,8 +100,9 @@ package sodium-clib
 
 Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler and
 these libraries are released together as a matched set, built from the same
-commit. The commit above matches this guide's compiler; for a different
-`uplc-ghc`, use the plutus commit it was built from.
+commit. The commit above matches release 9.6.166.1 (the current ghcup
+`latest`); for a different `uplc-ghc`, use the plutus commit it was built
+from.
 
 **Not for production.** The vendored crypto C libraries pulled in by the
 `*-clib` `source-repository-package`s above have not been audited. Use this
