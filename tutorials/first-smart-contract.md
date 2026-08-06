@@ -4,24 +4,49 @@ permalink: /tutorials/first-smart-contract/
 ---
 Before writing a real validator, it helps to get the whole toolchain working
 end to end with the simplest possible Plinth program: a function that adds two
-numbers. In this tutorial you will create a tiny project from scratch, compile
-it with `uplc-ghc`, run it, and read the Plutus Core it produced.
+numbers. In this tutorial you will install `uplc-ghc`, create a tiny project
+from scratch, compile it, run it, and read the Plutus Core it produced.
 
 This tutorial targets **Linux**. Windows and macOS walkthroughs will follow
 later.
 
 ## Before you start
 
-You need `uplc-ghc` installed. If you do not have it yet, follow
-[Install Plinth standalone compiler]({% link how-to/install.md %}) first &mdash;
-this tutorial waits for you here. If you installed it via ghcup (the
-recommended way), the binary is simply `uplc-ghc` on your `PATH`: wherever
-this tutorial says `/path/to/uplc-ghc`, write plain `uplc-ghc` instead. If
-you built from source, use the path of the binary the build produced.
+You need on `PATH`:
 
-You will also need a recent `cabal` (3.8 or newer) on your `PATH`.
+- [ghcup](https://www.haskell.org/ghcup/) 0.2.1.0 or newer (check with
+  `ghcup --version`);
+- a recent `cabal` (3.8 or newer);
+- ghcup's `bin` directory, `~/.ghcup/bin` by default, where the compiler
+  installed in step 1 lands. The standard ghcup setup adds it to `PATH`
+  already.
 
-## Step 1: Create the project
+The rest of the tutorial assumes the compiler is available as plain
+`uplc-ghc`, which is what step 1 gives you. If you
+[built it from source]({% link how-to/build.md %}) instead, replace `uplc-ghc`
+with the path of the binary the build produced.
+
+## Step 1: Install Plinth
+
+`uplc-ghc` is distributed via ghcup as a custom tool named `plinth` (see
+[Install Plinth standalone compiler]({% link how-to/install.md %}) for the
+details). Add the Plinth release channel, then install and activate the tool:
+
+```console
+$ ghcup config add-release-channel https://raw.githubusercontent.com/input-output-hk/ghc-plinth/ghcup-channel/ghcup-plinth.yaml
+$ ghcup install plinth latest
+$ ghcup set plinth latest
+```
+
+Check that the compiler is on `PATH`:
+
+```console
+$ uplc-ghc --version
+```
+
+If you have already installed it this way, skip to step 2.
+
+## Step 2: Create the project
 
 Make a new directory and add the three files below.
 
@@ -33,7 +58,7 @@ crypto C libraries (`libsodium`, `secp256k1`, `blst`) from source via the
 `*-clib` blocks, so you do not need them installed on your system:
 
 ```haskell
-with-compiler: /path/to/uplc-ghc
+with-compiler: uplc-ghc
 
 packages: .
 
@@ -183,7 +208,7 @@ The typed quote `[|| addTyped ||]` and the `compile` splice are the only
 Plinth-specific pieces; `PlutusTx.Prelude` (imported as `Tx`) supplies the
 on-chain `+`, and everything else is ordinary Haskell.
 
-## Step 2: Build it
+## Step 3: Build it
 
 ```console
 $ cabal update
@@ -195,7 +220,7 @@ from source, so expect it to take a while. Because the Plinth plugin is built
 into `uplc-ghc`, no extra plugin configuration is required: the `compile` splice
 is translated to Plutus Core as part of the normal build.
 
-## Step 3: Run it
+## Step 4: Run it
 
 ```console
 $ cabal run plinth-add
@@ -204,7 +229,7 @@ $ cabal run plinth-add
 `main` runs and writes the compiled program to `add.uplc` in the current
 directory.
 
-## Step 4: Look at the Plutus Core
+## Step 5: Look at the Plutus Core
 
 ```console
 $ cat add.uplc
