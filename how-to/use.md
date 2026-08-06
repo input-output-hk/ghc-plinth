@@ -34,16 +34,17 @@ repository cardano-haskell-packages
     d4a35cd3121aa00d18544bb0ac01c3e1691d618f462c46129271bccf39f7e8ee
 
 index-state:
-  , hackage.haskell.org 2025-09-21T21:31:06Z
-  , cardano-haskell-packages 2026-01-24T11:25:12Z
+  , hackage.haskell.org 2026-08-06T04:37:23Z
+  , cardano-haskell-packages 2026-08-05T05:00:53Z
 ```
 
 Adapt the two `index-state` dates to your project: they pin the CHaP and Hackage
 package sets.
 
-The Plinth libraries themselves (`plutus-tx`, `plutus-core`, `plutus-tx-plugin`)
-are neither bundled with the compiler nor taken from CHaP. Pull them from the
-`ghc-plinth-plutus` fork that `uplc-ghc` was built against:
+The Plinth libraries themselves (`plutus-tx`, `plutus-core`) are neither
+bundled with the compiler nor taken from CHaP. Pull them from the
+`ghc-plinth-plutus` fork that `uplc-ghc` was built against (`plutus-tx-plugin`
+is not needed: the compiler is built into `uplc-ghc`):
 
 ```haskell
 source-repository-package
@@ -52,7 +53,6 @@ source-repository-package
   tag: 2e582ecde824238f927322d208740322eada8115
   subdir: plutus-tx
           plutus-core
-          plutus-tx-plugin
 ```
 
 Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler
@@ -75,7 +75,7 @@ handle real funds.
 source-repository-package
   type: git
   location: https://github.com/hsyl20/cardano-base
-  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
+  tag: 055ebbcc73e1cb234f1fd3fa237a4fb087130183
   subdir: cardano-crypto-class
           cardano-crypto-praos
 
@@ -107,6 +107,11 @@ package sodium-clib
   -- disable -fPIE: the static boot libraries are not built with it, so the
   -- link phase fails otherwise.
   configure-options: --enable-pie=no
+
+-- criterion (a plutus-core dependency) pulls microstache, whose aeson upper
+-- bound predates the aeson >= 2.3 that plutus-core requires.
+allow-newer:
+  , microstache:aeson
 ```
 
 Then refresh the package index and build:

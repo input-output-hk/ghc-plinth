@@ -51,7 +51,7 @@ If you have already installed it this way, skip to step 2.
 Make a new directory and add the three files below.
 
 **`cabal.project`** wires up the build. It points cabal at `uplc-ghc`; pulls the
-Plinth libraries (`plutus-tx`, `plutus-core`, `plutus-tx-plugin`) from the
+Plinth libraries (`plutus-tx`, `plutus-core`) from the
 `ghc-plinth-plutus` fork the compiler was built against; uses the Cardano
 package repository (CHaP) for the remaining dependencies; and builds the Cardano
 crypto C libraries (`libsodium`, `secp256k1`, `blst`) from source via the
@@ -74,22 +74,22 @@ repository cardano-haskell-packages
     d4a35cd3121aa00d18544bb0ac01c3e1691d618f462c46129271bccf39f7e8ee
 
 index-state:
-  , hackage.haskell.org 2025-09-21T21:31:06Z
-  , cardano-haskell-packages 2026-01-24T11:25:12Z
+  , hackage.haskell.org 2026-08-06T04:37:23Z
+  , cardano-haskell-packages 2026-08-05T05:00:53Z
 
--- The Plinth libraries, from the fork uplc-ghc was built against.
+-- The Plinth libraries, from the fork uplc-ghc was built against. The
+-- compiler itself is built into uplc-ghc, so plutus-tx-plugin is not needed.
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/ghc-plinth-plutus
   tag: 2e582ecde824238f927322d208740322eada8115
   subdir: plutus-tx
           plutus-core
-          plutus-tx-plugin
 
 source-repository-package
   type: git
   location: https://github.com/hsyl20/cardano-base
-  tag: 8ea819bb548583b63b4926170a891e91e4f7c17b
+  tag: 055ebbcc73e1cb234f1fd3fa237a4fb087130183
   subdir: cardano-crypto-class
           cardano-crypto-praos
 
@@ -121,6 +121,11 @@ package sodium-clib
   -- disable -fPIE: the static boot libraries are not built with it, so the
   -- link phase fails otherwise.
   configure-options: --enable-pie=no
+
+-- criterion (a plutus-core dependency) pulls microstache, whose aeson upper
+-- bound predates the aeson >= 2.3 that plutus-core requires.
+allow-newer:
+  , microstache:aeson
 ```
 
 Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler and
@@ -154,16 +159,15 @@ executable plinth-add
     , base
     , text
     , prettyprinter
-    , plutus-tx        ^>=1.57
-    , plutus-core      ^>=1.57
-    , plutus-tx-plugin
+    , plutus-tx
+    , plutus-core
   ghc-options:
     -fexternal-interpreter
     -fobject-code -fno-full-laziness -fno-ignore-interface-pragmas
     -fno-omit-interface-pragmas -fno-spec-constr -fno-specialise
     -fno-strictness -fno-unbox-small-strict-fields
     -fno-unbox-strict-fields
-    -fplugin-opt PlutusTx.Plugin:target-version=1.1.0
+    -fplugin-opt Plinth.Plugin:target-version=1.1.0
 ```
 
 **`Main.hs`** is the whole program. It defines the on-chain function, compiles
