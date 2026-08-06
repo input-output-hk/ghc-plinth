@@ -13,7 +13,7 @@ later.
 ## Before you start
 
 You need `uplc-ghc` installed. If you do not have it yet, follow
-[Install Plinth standalone compiler]({% link how-to/build.md %}) first &mdash;
+[Install Plinth standalone compiler]({% link how-to/install.md %}) first &mdash;
 this tutorial waits for you here. If you installed it via ghcup (the
 recommended way), the binary is simply `uplc-ghc` on your `PATH`: wherever
 this tutorial says `/path/to/uplc-ghc`, write plain `uplc-ghc` instead. If

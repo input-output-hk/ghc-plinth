@@ -4,7 +4,7 @@ permalink: /how-to/use/
 ---
 
 The recommended way to use the Plinth standalone compiler is to set it once in
-`cabal.project`. If you [installed it via ghcup]({% link how-to/build.md %})
+`cabal.project`. If you [installed it via ghcup]({% link how-to/install.md %})
 (the recommended way), `uplc-ghc` is on `PATH` and its name alone is enough:
 
 ```haskell

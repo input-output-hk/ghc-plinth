@@ -50,6 +50,8 @@ docs:
     url: /how-to/
     children:
       - title: Install Plinth standalone compiler
+        url: /how-to/install/
+      - title: Build Plinth from source
         url: /how-to/build/
       - title: Use uplc-ghc in a project
         url: /how-to/use/

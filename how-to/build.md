@@ -1,53 +1,16 @@
 ---
-title: Install Plinth standalone compiler
+title: Build Plinth from source
 permalink: /how-to/build/
 ---
-This guide explains how to get `uplc-ghc`, the
-[Plinth standalone compiler]({% link explanation/standalone-compiler.md %}).
+This guide explains how to build `uplc-ghc`, the
+[Plinth standalone compiler]({% link explanation/standalone-compiler.md %}),
+from source. Most users do not need this: the recommended way to get
+`uplc-ghc` is to
+[install a released binary via ghcup]({% link how-to/install.md %}). Build
+from source when you work on the compiler itself, or when no binary
+distribution covers your platform.
 
-The recommended way is to [install a released binary via
-ghcup](#installing-via-ghcup). [Build from source](#building-from-source) when
-you work on the compiler itself, or when no binary distribution covers your
-platform.
-
-## Installing via ghcup
-
-`uplc-ghc` is distributed as a custom tool named `plinth` for
-[ghcup](https://www.haskell.org/ghcup/), the standard installer for Haskell
-toolchains. You need ghcup 0.2.1.0 or newer (check with `ghcup --version`).
-
-Add the Plinth release channel, then install and activate the tool:
-
-```console
-$ ghcup config add-release-channel https://raw.githubusercontent.com/input-output-hk/ghc-plinth/ghcup-channel/ghcup-plinth.yaml
-$ ghcup install plinth latest
-$ ghcup set plinth latest
-```
-
-`ghcup install` downloads the binary distribution for your platform and
-installs it under ghcup's own directory; `ghcup set` then symlinks `uplc-ghc`
-into ghcup's `bin` directory (`~/.ghcup/bin` by default), which is already on
-`PATH` for ghcup users. Verify with:
-
-```console
-$ uplc-ghc --version
-```
-
-Installing `plinth` does not affect any GHC installed by ghcup: the tool ships
-only the `uplc-*` binaries, so your regular `ghc` is left untouched.
-
-Binary distributions are published for:
-
-- Linux, x86_64 and aarch64 (glibc, and musl/Alpine)
-- macOS, Apple Silicon
-- Windows, x86_64
-
-List the available versions with `ghcup list -t plinth`. Once installed, head
-over to [Use uplc-ghc in a project]({% link how-to/use.md %}).
-
-## Building from source
-
-### Prerequisites
+## Prerequisites
 
 `plinth-build.sh` expects the following tools on `PATH`:
 
@@ -64,7 +27,7 @@ over to [Use uplc-ghc in a project]({% link how-to/use.md %}).
 `happy` and `alex` are built locally into `_build/tools/` if they are not
 found, so they are effectively optional. The others must be present.
 
-### 1. Clone with submodules
+## 1. Clone with submodules
 
 The `plutus` submodule provides `plutus-tx`, `plutus-tx-plugin`, and
 `plutus-core`, so clone recursively:
@@ -79,7 +42,7 @@ If you already cloned without `--recurse-submodules`, fetch them with:
 $ git submodule update --init --recursive
 ```
 
-### 2. Run the build script
+## 2. Run the build script
 
 From the root of the repository:
 
@@ -90,7 +53,7 @@ $ ./plinth-build.sh
 The script bootstraps GHC and then builds `uplc-ghc`. What it produces is
 described under [Build outputs](#build-outputs) below.
 
-### Build options
+## Build options
 
 `plinth-build.sh` is controlled by environment variables. The two most common
 force a full rebuild or select the release flavour:
@@ -110,7 +73,7 @@ It also honours tool-location overrides such as `GHC`, `CABAL`, `HAPPY`,
 `FLAVOUR`, when you need to point it at specific tools or change the build
 flavour.
 
-### Build outputs
+## Build outputs
 
 When `plinth-build.sh` finishes it has produced two things.
 
