@@ -58,17 +58,39 @@ TOOL_DETAILS = {
     "toolLicense": "BSD-3-Clause",
 }
 
-# The uplc-* wrappers installed by the bindist that should be symlinked into
-# ~/.ghcup/bin. `setName` is the unversioned link created by
+# Note [Finding ghc-pkg on Windows]
+# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+# With `with-compiler: uplc-ghc`, cabal looks for the matching ghc-pkg next to
+# the *symlink-resolved* compiler path (guessToolFromGhcPath in Cabal). On Unix
+# this works by accident: ~/.ghcup/bin/uplc-ghc is a symlink into the install
+# dir, where the correct ghc-pkg sits under its stock name. On Windows ghcup
+# creates shim executables, not symlinks. Cabal cannot see through a shim, so
+# it searches ghcup's bin dir only and picks up ghc-pkg.exe from the user's
+# *set* GHC. Configuration then fails with a ghc/ghc-pkg version mismatch
+# (issue #29).
+#
+# The fix: also link the bindist's ghc-pkg into ghcup's bin dir, under the
+# name `uplc-ghc-pkg` so that it cannot shadow the user's GHC, and point cabal
+# at it explicitly:
+#
+#     with-compiler: uplc-ghc
+#     with-hc-pkg:   uplc-ghc-pkg
+
+# The binaries ghcup must link into ~/.ghcup/bin, as (target, link) pairs:
+# `target` is the binary name in the installed bindist's bin/, `link` is the
+# base name of the created links. `setName` is the unversioned link created by
 # `ghcup set plinth <ver>`.
 #
-# Keep this in sync with the fixup in plinth-build.sh, which prefixes only ghc
-# itself: the bindist's other tools (ghc-pkg, haddock, hsc2hs, hpc, hp2ps) keep
-# their stock names, and must NOT be linked into ~/.ghcup/bin under those names
-# or uplc-ghc would hijack the user's GHC toolchain. Listing a binary the bindist
-# does not ship makes ghcup create a *dangling* link, which it does silently.
-UPLC_BINARIES = [
-    "uplc-ghc",
+# Keep this in sync with the fixup in plinth-build.sh and with EXPECTED_BINS in
+# plinth-ghcup-test.sh. Only uplc-prefixed link names are safe: the bindist's
+# other tools (haddock, hsc2hs, hpc, ...) keep their stock names, and linking
+# them under those names would hijack the user's GHC toolchain. Listing a
+# target the bindist does not ship makes ghcup create a *dangling* link, which
+# it does silently.
+LINKED_BINARIES = [
+    ("uplc-ghc", "uplc-ghc"),
+    # See Note [Finding ghc-pkg on Windows]
+    ("ghc-pkg", "uplc-ghc-pkg"),
 ]
 
 # arch component (first field of the GHC target platform) -> ghcup Architecture
@@ -150,12 +172,12 @@ def install_spec(ghcup_platform):
     exe_ext = ".exe" if ghcup_platform == "Windows" else ""
     exe_symlinked = [
         {
-            "target": f"bin/{b}{exe_ext}",
-            "linkName": f"{b}-${{PKGVER}}{exe_ext}",
+            "target": f"bin/{target}{exe_ext}",
+            "linkName": f"{link}-${{PKGVER}}{exe_ext}",
             "pVPMajorLinks": True,
-            "setName": f"{b}{exe_ext}",
+            "setName": f"{link}{exe_ext}",
         }
-        for b in UPLC_BINARIES
+        for target, link in LINKED_BINARIES
     ]
 
     if ghcup_platform == "Windows":

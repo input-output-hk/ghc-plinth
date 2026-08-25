@@ -246,11 +246,11 @@ echo ""
 echo "=== verifying installation ==="
 check "install dir $INSTALL_DIR" "[ -d '$INSTALL_DIR' ]"
 
-# Only the binaries the bindist actually ships; must match UPLC_BINARIES in
+# Only the link names ghcup creates; must match LINKED_BINARIES in
 # generate-ghcup-metadata.py. Test with -e (which follows symlinks) and not -L,
 # so a link ghcup created towards a file the bindist doesn't contain fails here
 # instead of being shipped broken.
-EXPECTED_BINS="uplc-ghc"
+EXPECTED_BINS="uplc-ghc uplc-ghc-pkg"
 for bin in $EXPECTED_BINS; do
     check "$bin-$VERSION" "[ -e '$BINDIR/$bin-$VERSION$EXE_EXT' ]"
     check "$bin (unversioned/set)" "[ -e '$BINDIR/$bin$EXE_EXT' ]"
@@ -258,11 +258,28 @@ done
 
 echo ""
 UPLC_GHC="$BINDIR/uplc-ghc${EXE_EXT}"
+got=""
 if [ -x "$UPLC_GHC" ]; then
     got=$("$UPLC_GHC" --numeric-version 2>&1 || true)
     echo "  OK: uplc-ghc runs (--numeric-version = $got; tool version = $VERSION)"
 else
     echo "  FAIL: uplc-ghc not executable at $UPLC_GHC"; ALL_OK=0
+fi
+
+# uplc-ghc-pkg must run and report the same version as uplc-ghc: cabal
+# (configured with `with-hc-pkg: uplc-ghc-pkg`) refuses a ghc/ghc-pkg version
+# mismatch. See Note [Finding ghc-pkg on Windows] in generate-ghcup-metadata.py.
+UPLC_GHC_PKG="$BINDIR/uplc-ghc-pkg${EXE_EXT}"
+if [ -x "$UPLC_GHC_PKG" ]; then
+    pkg_ver=$("$UPLC_GHC_PKG" --version 2>&1 | grep -o '[0-9][0-9.]*$' || true)
+    if [ -n "$got" ] && [ "$pkg_ver" = "$got" ]; then
+        echo "  OK: uplc-ghc-pkg runs and matches uplc-ghc ($pkg_ver)"
+    else
+        echo "  FAIL: uplc-ghc-pkg version '$pkg_ver' does not match uplc-ghc '$got'"
+        ALL_OK=0
+    fi
+else
+    echo "  FAIL: uplc-ghc-pkg not executable at $UPLC_GHC_PKG"; ALL_OK=0
 fi
 
 ####################################################################
