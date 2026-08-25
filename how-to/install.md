@@ -23,16 +23,17 @@ $ ghcup set plinth latest
 ```
 
 `ghcup install` downloads the binary distribution for your platform and
-installs it under ghcup's own directory; `ghcup set` then symlinks `uplc-ghc`
-into ghcup's `bin` directory (`~/.ghcup/bin` by default), which is already on
-`PATH` for ghcup users. Verify with:
+installs it under ghcup's own directory; `ghcup set` then links `uplc-ghc` and
+`uplc-ghc-pkg` (the compiler's own `ghc-pkg`) into ghcup's `bin` directory
+(`~/.ghcup/bin` by default), which is already on `PATH` for ghcup users.
+Verify with:
 
 ```console
 $ uplc-ghc --version
 ```
 
-Installing `plinth` does not affect any GHC installed by ghcup: the tool ships
-only the `uplc-*` binaries, so your regular `ghc` is left untouched.
+Installing `plinth` does not affect any GHC installed by ghcup: only
+`uplc-*` binaries are put on `PATH`, so your regular `ghc` is left untouched.
 
 ## Supported platforms
 

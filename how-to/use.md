@@ -9,10 +9,28 @@ The recommended way to use the Plinth standalone compiler is to set it once in
 
 ```haskell
 with-compiler: uplc-ghc
+with-hc-pkg:   uplc-ghc-pkg
 packages: .
 ```
 
-For a compiler built from source, give the path to the binary instead:
+The `with-hc-pkg` line points cabal at the `ghc-pkg` that belongs to
+`uplc-ghc`. ghcup installs it under the name `uplc-ghc-pkg`, so that it does
+not collide with your regular GHC. Without this line, cabal looks for a
+`ghc-pkg` next to the compiler. On Linux and macOS this finds the correct one
+through the `uplc-ghc` symlink, but on Windows (where ghcup creates shims, not
+symlinks) cabal picks up the `ghc-pkg.exe` of your regular GHC and fails with a
+version mismatch.
+
+Releases from 9.6.166.2 install the `uplc-ghc-pkg` link. If the command is not
+found, update first:
+
+```console
+$ ghcup install plinth latest
+$ ghcup set plinth latest
+```
+
+For a compiler built from source, give the path to the binary instead. The
+matching `ghc-pkg` sits next to it, so `with-hc-pkg` is not needed:
 
 ```haskell
 with-compiler: /path/to/uplc-ghc

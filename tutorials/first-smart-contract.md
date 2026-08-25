@@ -50,7 +50,9 @@ If you have already installed it this way, skip to step 2.
 
 Make a new directory and add the three files below.
 
-**`cabal.project`** wires up the build. It points cabal at `uplc-ghc`; pulls the
+**`cabal.project`** wires up the build. It points cabal at `uplc-ghc` and its
+`ghc-pkg` (installed by ghcup as `uplc-ghc-pkg`, so that it does not collide
+with your regular GHC); pulls the
 Plinth libraries (`plutus-tx`, `plutus-core`) from the
 `ghc-plinth-plutus` fork the compiler was built against; uses the Cardano
 package repository (CHaP) for the remaining dependencies; and builds the Cardano
@@ -59,6 +61,7 @@ crypto C libraries (`libsodium`, `secp256k1`, `blst`) from source via the
 
 ```haskell
 with-compiler: uplc-ghc
+with-hc-pkg:   uplc-ghc-pkg
 
 packages: .
 
