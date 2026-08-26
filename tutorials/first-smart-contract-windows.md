@@ -1,15 +1,15 @@
 ---
-title: Your first smart contract with Plinth (Linux)
-permalink: /tutorials/first-smart-contract/
+title: Your first smart contract with Plinth (Windows)
+permalink: /tutorials/first-smart-contract-windows/
 ---
 Before writing a real validator, it helps to get the whole toolchain working
 end to end with the simplest possible Plinth program: a function that adds two
 numbers. In this tutorial you will install `uplc-ghc`, create a tiny project
 from scratch, compile it, run it, and read the Plutus Core it produced.
 
-This tutorial targets **Linux**. There is a
-[Windows version]({% link tutorials/first-smart-contract-windows.md %}); a
-macOS walkthrough will follow later.
+This tutorial targets **Windows**. It mirrors
+[the Linux tutorial]({% link tutorials/first-smart-contract.md %}); the
+project files are the same, only the setup and the shell commands differ.
 
 ## Before you start
 
@@ -18,14 +18,38 @@ You need on `PATH`:
 - [ghcup](https://www.haskell.org/ghcup/) 0.2.1.0 or newer (check with
   `ghcup --version`);
 - a recent `cabal` (3.8 or newer);
-- ghcup's `bin` directory, `~/.ghcup/bin` by default, where the compiler
+- [Git for Windows](https://git-scm.com/download/win): cabal uses `git` to
+  fetch the `source-repository-package` dependencies of this project;
+- ghcup's `bin` directory, `C:\ghcup\bin` by default, where the compiler
   installed in step 1 lands. The standard ghcup setup adds it to `PATH`
   already.
 
+The commands below work in both PowerShell and the classic Command Prompt,
+except where noted.
+
+Two Windows settings matter before the first build:
+
+**Enable long paths in Git.** The dependencies fetched by cabal contain paths
+longer than the 260-character Windows default, and the checkout fails with
+"Filename too long" otherwise:
+
+```console
+> git config --global core.longpaths true
+```
+
+**Smart App Control blocks the build.** The Plinth binaries are not signed
+yet. On a Windows 11 system with Smart App Control active, the build stops
+with error 4551 when cabal runs them. You must turn Smart App Control off
+(Windows Security &gt; App &amp; browser control &gt; Smart App Control
+settings) to use this toolchain.
+
+**Off is permanent.** Windows does not let you turn Smart App Control back on
+without resetting or reinstalling Windows. Decide whether that trade-off is
+acceptable on this machine &mdash; a virtual machine avoids it entirely.
+{:.warning}
+
 The rest of the tutorial assumes the compiler is available as plain
-`uplc-ghc`, which is what step 1 gives you. If you
-[built it from source]({% link how-to/build.md %}) instead, replace `uplc-ghc`
-with the path of the binary the build produced.
+`uplc-ghc`, which is what step 1 gives you.
 
 ## Step 1: Install Plinth
 
@@ -34,22 +58,26 @@ with the path of the binary the build produced.
 details). Add the Plinth release channel, then install and activate the tool:
 
 ```console
-$ ghcup config add-release-channel https://raw.githubusercontent.com/input-output-hk/ghc-plinth/ghcup-channel/ghcup-plinth.yaml
-$ ghcup install plinth latest
-$ ghcup set plinth latest
+> ghcup config add-release-channel https://raw.githubusercontent.com/input-output-hk/ghc-plinth/ghcup-channel/ghcup-plinth.yaml
+> ghcup install plinth latest
+> ghcup set plinth latest
 ```
 
 Check that the compiler is on `PATH`:
 
 ```console
-$ uplc-ghc --version
+> uplc-ghc --version
 ```
 
-If you have already installed it this way, skip to step 2.
+If you have already installed it this way, skip to step 2. Make sure the
+installed version is 9.6.166.2 or newer: on Windows, older releases do not
+work with the `cabal.project` below (they lack the `uplc-ghc-pkg` shim). Run
+the two `install`/`set` commands above again to update.
 
 ## Step 2: Create the project
 
-Make a new directory and add the three files below.
+Make a new directory and add the three files below. They are identical to the
+Linux tutorial's files.
 
 **`cabal.project`** wires up the build. It points cabal at `uplc-ghc` and its
 `ghc-pkg` (installed by ghcup as `uplc-ghc-pkg`, so that it does not collide
@@ -58,7 +86,11 @@ Plinth libraries (`plutus-tx`, `plutus-core`) from the
 `ghc-plinth-plutus` fork the compiler was built against; uses the Cardano
 package repository (CHaP) for the remaining dependencies; and builds the Cardano
 crypto C libraries (`libsodium`, `secp256k1`, `blst`) from source via the
-`*-clib` blocks, so you do not need them installed on your system:
+`*-clib` blocks, so you do not need them installed on your system.
+
+The `with-hc-pkg` line is essential on Windows: without it, cabal picks up the
+`ghc-pkg.exe` of your regular GHC and fails with a version mismatch (see
+[Use uplc-ghc in a project]({% link how-to/use.md %})):
 
 ```haskell
 with-compiler: uplc-ghc
@@ -219,8 +251,8 @@ on-chain `+`, and everything else is ordinary Haskell.
 ## Step 3: Build it
 
 ```console
-$ cabal update
-$ cabal build
+> cabal update
+> cabal build
 ```
 
 The first run clones and builds the Plinth libraries and the crypto C libraries
@@ -228,10 +260,13 @@ from source, so expect it to take a while. Because the Plinth plugin is built
 into `uplc-ghc`, no extra plugin configuration is required: the `compile` splice
 is translated to Plutus Core as part of the normal build.
 
+If the clone step fails with "Filename too long", or the build stops with
+error 4551, go back to [Before you start](#before-you-start).
+
 ## Step 4: Run it
 
 ```console
-$ cabal run plinth-add
+> cabal run plinth-add
 ```
 
 `main` runs and writes the compiled program to `add.uplc` in the current
@@ -239,8 +274,10 @@ directory.
 
 ## Step 5: Look at the Plutus Core
 
+In the Command Prompt (`cat` only exists in PowerShell):
+
 ```console
-$ cat add.uplc
+> type add.uplc
 ```
 
 You should see something like:
