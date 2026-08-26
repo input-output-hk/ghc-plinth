@@ -55,11 +55,6 @@ with error 4551 when cabal runs them. You must turn Smart App Control off
 (Windows Security &gt; App &amp; browser control &gt; Smart App Control
 settings) to use this toolchain.
 
-**Off is permanent.** Windows does not let you turn Smart App Control back on
-without resetting or reinstalling Windows. Decide whether that trade-off is
-acceptable on this machine &mdash; a virtual machine avoids it entirely.
-{:.warning}
-
 The rest of the tutorial assumes the compiler is available as plain
 `uplc-ghc`, which is what step 1 gives you.
 
