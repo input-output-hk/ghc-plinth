@@ -133,7 +133,7 @@ allow-newer:
 
 Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`: the compiler and
 these libraries are released together as a matched set, built from the same
-commit. The commit above matches release 9.6.166.1 (the current ghcup
+commit. The commit above matches releases 9.6.166.1 and 9.6.166.2 (the current ghcup
 `latest`); for a different `uplc-ghc`, use the plutus commit it was built
 from.
 
