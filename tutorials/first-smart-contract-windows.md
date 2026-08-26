@@ -37,6 +37,18 @@ longer than the 260-character Windows default, and the checkout fails with
 > git config --global core.longpaths true
 ```
 
+If the checkout still fails, also lift the limit in Windows itself, with this
+registry change from an **administrator** PowerShell:
+
+```console
+> New-ItemProperty -Path "HKLM:\SYSTEM\CurrentControlSet\Control\FileSystem" -Name "LongPathsEnabled" -Value 1 -PropertyType DWORD -Force
+```
+
+See [the accepted answer to "Filename too long in Git for
+Windows"](https://stackoverflow.com/a/22575737) for the details: why the limit
+exists, the system-wide Git alternative (`--system`), and the Microsoft
+documentation on `LongPathsEnabled`.
+
 **Smart App Control blocks the build.** The Plinth binaries are not signed
 yet. On a Windows 11 system with Smart App Control active, the build stops
 with error 4551 when cabal runs them. You must turn Smart App Control off
