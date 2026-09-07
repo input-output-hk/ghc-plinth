@@ -102,6 +102,11 @@ package sodium-clib
   configure-options: --enable-pie=no
 ```
 
+**Not for production.** As in the other tutorials, the vendored crypto C
+libraries built by the `*-clib` blocks have not been audited. Use this setup
+for learning and experimentation only.
+{:.warning}
+
 **`lock-offchain.cabal`** describes a library, so that GHCi can load it:
 
 ```haskell
