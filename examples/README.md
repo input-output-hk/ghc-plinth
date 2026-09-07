@@ -12,6 +12,9 @@ files byte-identical to the code blocks of its tutorial page.
 - `lock-ghci/`: "Lock and unlock funds from GHCi". Off-chain cardano-api
   helpers to use the lock validator interactively. Builds with a standard
   GHC 9.6.7, not with uplc-ghc; reads the `lock.plutus` that `lock/` wrote.
+- `lock-ghci-exp/`: "Lock and unlock funds with the experimental
+  cardano-api". The same helpers as `lock-ghci/`, rebuilt on
+  Cardano.Api.Experimental.
 
 `add/` and `lock/` build with the ghcup-installed compiler: `cabal build`
 with `uplc-ghc` and `uplc-ghc-pkg` on PATH.
