@@ -1,0 +1,21 @@
+cabal-version: 3.0
+name:          lock-offchain
+version:       0.1.0.0
+build-type:    Simple
+
+library
+  exposed-modules:  Offchain
+  hs-source-dirs:   .
+  default-language: GHC2021
+  build-depends:
+    , base
+    , containers
+    , directory
+    , text
+    , cardano-api
+    , cardano-ledger-core
+  ghc-options:
+    -Wall
+    -- cardano-api 11 deprecates this transaction-building API in
+    -- favour of Cardano.Api.Experimental; it still is the stable one.
+    -Wno-deprecations

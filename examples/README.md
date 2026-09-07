@@ -9,6 +9,9 @@ files byte-identical to the code blocks of its tutorial page.
 - `lock/`: "Lock and unlock funds on a local chain". Compiles a Plutus V3
   lock/unlock validator and writes it as a cardano-cli text envelope
   (`lock.plutus`), used against a Yaci DevKit devnet.
+- `lock-ghci/`: "Lock and unlock funds from GHCi". Off-chain cardano-api
+  helpers to use the lock validator interactively. Builds with a standard
+  GHC 9.6.7, not with uplc-ghc; reads the `lock.plutus` that `lock/` wrote.
 
-Both build with the ghcup-installed compiler: `cabal build` with `uplc-ghc`
-and `uplc-ghc-pkg` on PATH.
+`add/` and `lock/` build with the ghcup-installed compiler: `cabal build`
+with `uplc-ghc` and `uplc-ghc-pkg` on PATH.
