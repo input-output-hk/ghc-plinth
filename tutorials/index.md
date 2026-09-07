@@ -6,7 +6,7 @@ permalink: /tutorials/
 guaranteed-to-work experience so you can learn by doing. They are for newcomers
 who want to get started, not for looking up specific facts.
 
-- [Your first smart contract with Plinth (Linux, macOS)]({% link tutorials/first-smart-contract.md %})
+- [Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %})
   &mdash; targets Linux and macOS; it links to a Windows version.
 - [Lock and unlock funds on a local chain (Linux)]({% link tutorials/lock-and-unlock.md %})
   &mdash; write a real validator, deploy it on a local Cardano network with

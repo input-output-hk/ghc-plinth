@@ -1,5 +1,5 @@
 ---
-title: Your first smart contract with Plinth (Linux, macOS)
+title: Your first smart contract with Plinth
 permalink: /tutorials/first-smart-contract/
 ---
 Before writing a real validator, it helps to get the whole toolchain working
