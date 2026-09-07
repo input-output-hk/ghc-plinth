@@ -536,6 +536,9 @@ gives you a fresh chain next time.
 
 ## Where to go next
 
+- [Lock and unlock funds from GHCi]({% link tutorials/lock-and-unlock-ghci.md %})
+  &mdash; the same two transactions, built from Haskell with `cardano-api`
+  instead of shell commands.
 - Replace the secret number with a real condition: require a signature. The
   `ScriptContext` carries `txInfoSignatories`; check that a public key hash
   is in it, and pass `--required-signer-hash` to `transaction build`. See

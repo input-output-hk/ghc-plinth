@@ -47,6 +47,8 @@ docs:
         url: /tutorials/first-smart-contract/
       - title: Lock and unlock funds on a local chain (Linux)
         url: /tutorials/lock-and-unlock/
+      - title: Lock and unlock funds from GHCi (Linux)
+        url: /tutorials/lock-and-unlock-ghci/
 
   - title: How-to guides
     url: /how-to/

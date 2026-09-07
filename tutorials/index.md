@@ -11,3 +11,6 @@ who want to get started, not for looking up specific facts.
 - [Lock and unlock funds on a local chain (Linux)]({% link tutorials/lock-and-unlock.md %})
   &mdash; write a real validator, deploy it on a local Cardano network with
   Yaci DevKit, and spend from it with `cardano-cli`.
+- [Lock and unlock funds from GHCi (Linux)]({% link tutorials/lock-and-unlock-ghci.md %})
+  &mdash; the same chain interaction, done from Haskell with `cardano-api`
+  and a GHCi session.

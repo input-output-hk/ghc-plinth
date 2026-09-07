@@ -188,6 +188,8 @@ experimentation, not production.
 - [Lock and unlock funds on a local chain]({% link tutorials/lock-and-unlock.md %})
   &mdash; deploy the same kind of "must equal N" rule on a local devnet and
   watch a real node accept and reject it.
+- [Lock and unlock funds from GHCi]({% link tutorials/lock-and-unlock-ghci.md %})
+  &mdash; the off-chain `cardano-api` side of the modern stack, hands-on.
 - [The structure of a Plinth smart contract]({% link explanation/structure.md %})
   &mdash; where the off-chain test code sits, and applying parameters with
   `unsafeApplyCode`.
