@@ -49,6 +49,8 @@ docs:
         url: /tutorials/lock-and-unlock/
       - title: Lock and unlock funds from GHCi (Linux)
         url: /tutorials/lock-and-unlock-ghci/
+      - title: Lock and unlock funds with the experimental cardano-api (Linux)
+        url: /tutorials/lock-and-unlock-ghci-exp/
 
   - title: How-to guides
     url: /how-to/

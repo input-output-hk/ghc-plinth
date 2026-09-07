@@ -352,7 +352,9 @@ Read it from the top:
 
 `cardano-api` 11 marks this transaction-building API as deprecated in favour
 of its experimental successor; it is still the stable interface, and the one
-`cardano-cli` itself uses. The cabal file silences the warnings.
+`cardano-cli` itself uses. The cabal file silences the warnings. The
+[next tutorial]({% link tutorials/lock-and-unlock-ghci-exp.md %}) rebuilds
+these helpers on the experimental interface.
 {:.note}
 
 ## Step 2: Build it
@@ -470,6 +472,9 @@ $ ~/.yaci-devkit/bin/devkit.sh stop
 
 ## Where to go next
 
+- [Lock and unlock funds with the experimental cardano-api]({% link tutorials/lock-and-unlock-ghci-exp.md %})
+  &mdash; the same helpers, rebuilt on the successor of this tutorial's
+  deprecated transaction-building interface.
 - Extend `Offchain.hs`: a `stealFunds` that spends with someone else's key, a
   parameter for the locked amount's address, a loop that watches the script
   address.

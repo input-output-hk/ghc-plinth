@@ -14,3 +14,6 @@ who want to get started, not for looking up specific facts.
 - [Lock and unlock funds from GHCi (Linux)]({% link tutorials/lock-and-unlock-ghci.md %})
   &mdash; the same chain interaction, done from Haskell with `cardano-api`
   and a GHCi session.
+- [Lock and unlock funds with the experimental cardano-api (Linux)]({% link tutorials/lock-and-unlock-ghci-exp.md %})
+  &mdash; the same GHCi helpers, rebuilt on `Cardano.Api.Experimental`, the
+  successor of the deprecated transaction-building interface.
