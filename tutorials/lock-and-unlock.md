@@ -3,10 +3,33 @@ title: Lock and unlock funds on a local chain (Linux)
 permalink: /tutorials/lock-and-unlock/
 ---
 Your [first smart contract]({% link tutorials/first-smart-contract.md %}) ended
-with a `.uplc` file. In this tutorial you take the next step: you write a real
-validator, put it on a local Cardano network, lock funds at its address, and
-unlock them with a spending transaction. You also see the chain reject a
-transaction when the validator says no.
+with a `.uplc` file. In this tutorial you take the next step: you put a
+contract on a chain and use it.
+
+## What you will build
+
+The contract is a number lock. You store money in it together with a secret
+number; whoever gives the same number back can take the money out.
+
+On Cardano this shape has three parts:
+
+- A **validator**: the on-chain program. It guards funds and answers one
+  question: "may this transaction spend them?". Yours says yes only when the
+  number the spender supplies equals the stored one.
+- A **datum**: data stored on the chain together with the locked funds. It is
+  chosen when the funds are locked. Yours is the secret number, 42.
+- A **redeemer**: data the spending transaction supplies to the validator.
+  Yours is the guess.
+
+You will write the validator in Plinth (about twenty lines), compile it with
+`uplc-ghc`, and package it in the file format Cardano tools use. Then, on a
+private Cardano network running on your machine, you will:
+
+1. compute the validator's **script address** and send 10 test ada to it,
+   with the datum stored alongside (the "lock" transaction);
+2. spend those funds with redeemer 42 (the "unlock" transaction);
+3. try redeemer 41 and watch the validator reject the transaction, with the
+   error message your own code produced.
 
 The conceptual map for everything below is
 [From Plinth to the chain]({% link explanation/from-plinth-to-the-chain.md %}).
