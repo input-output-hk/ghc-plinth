@@ -17,7 +17,7 @@ On Cardano this shape has three parts:
   question: "may this transaction spend them?". Yours says yes only when the
   number the spender supplies equals the stored one.
 - A **datum**: data stored on the chain together with the locked funds. It is
-  chosen when the funds are locked. Yours is the secret number, 42.
+  chosen when the funds are locked. Yours is the secret number, 1234.
 - A **redeemer**: data the spending transaction supplies to the validator.
   Yours is the guess.
 
@@ -27,8 +27,8 @@ private Cardano network running on your machine, you will:
 
 1. compute the validator's **script address** and send 10 test ada to it,
    with the datum stored alongside (the "lock" transaction);
-2. spend those funds with redeemer 42 (the "unlock" transaction);
-3. try redeemer 41 and watch the validator reject the transaction, with the
+2. spend those funds with redeemer 1234 (the "unlock" transaction);
+3. try redeemer 4321 and watch the validator reject the transaction, with the
    error message your own code produced.
 
 The conceptual map for everything below is
@@ -317,7 +317,8 @@ check the name with `docker ps`.)
 
 The shell starts in `/app`, where you copied the file. All `cardano-cli`
 commands below run in this shell. The devnet's network magic (its network
-identifier) is **42**, so every command carries `--testnet-magic 42`.
+identifier) is **42**, a constant fixed by the devkit, so every command
+carries `--testnet-magic 42`.
 
 ## Step 5: Keys and addresses
 
@@ -368,8 +369,8 @@ In the cardano-cli shell, check that the funds arrived:
 ```console
 $ cardano-cli conway query utxo --address $(cat user.addr) --testnet-magic 42
 {
-    "dcb5a6b4878cb835738e04113b009e2a021dfb0f084c244166729d63b84f6a9c#0": {
-        "address": "addr_test1vpk9nywvhgwt0jm9dqazypqn8azh2p9j5te9np7d0g9334gvjmhgk",
+    "e67c838c9e784b3323efe3bf32a3e50abb6a7b27ae0d88ebe1064c7339a6c4e5#0": {
+        "address": "addr_test1vp599v2pq78mcn59zttav2y3mk36qnh8gyfgld7gxd83jyg3p95wh",
         ...
         "value": {
             "lovelace": 1000000000
@@ -387,14 +388,14 @@ commands below.
 ## Step 7: Lock funds at the script address
 
 The first transaction sends 10 ada to the script address and stores the
-secret number, 42, as an **inline datum** with it:
+secret number, 1234, as an **inline datum** with it:
 
 ```console
 $ cardano-cli conway transaction build \
     --testnet-magic 42 \
     --tx-in <TxHash#TxIx from the query above> \
     --tx-out "$(cat script.addr)+10000000" \
-    --tx-out-inline-datum-value 42 \
+    --tx-out-inline-datum-value 1234 \
     --change-address $(cat user.addr) \
     --out-file lock.txbody
 $ cardano-cli conway transaction sign \
@@ -409,9 +410,9 @@ the fee, and returns the rest to `--change-address`. `sign` witnesses it with
 your key; `submit` sends it to the node. You should see:
 
 ```
-Estimated transaction fee: 170517 Lovelace
+Estimated transaction fee: 170561 Lovelace
 Transaction successfully submitted. Transaction hash is:
-{"txhash":"dd3781f26deca54d2766c4913350af84fc4aaab648c7bbdbad26048e92150b43"}
+{"txhash":"64814126a28fb98c85ebef262dbbd02660fad8e0554bad68f8ba018414e122a0"}
 ```
 
 The funds are now at the script address, with the datum stored inline:
@@ -419,10 +420,10 @@ The funds are now at the script address, with the datum stored inline:
 ```console
 $ cardano-cli conway query utxo --address $(cat script.addr) --testnet-magic 42
 {
-    "dd3781f26deca54d2766c4913350af84fc4aaab648c7bbdbad26048e92150b43#0": {
+    "64814126a28fb98c85ebef262dbbd02660fad8e0554bad68f8ba018414e122a0#0": {
         "address": "addr_test1wr25q46ju9a3eufd780mkvcmzffmmxa4g3vv8azmhgjs0cggkp9sy",
         "inlineDatum": {
-            "int": 42
+            "int": 1234
         },
         ...
         "value": {
@@ -449,7 +450,7 @@ $ cardano-cli conway transaction build \
     --tx-in <TxHash#TxIx of the script output> \
     --tx-in-script-file lock.plutus \
     --tx-in-inline-datum-present \
-    --tx-in-redeemer-value 42 \
+    --tx-in-redeemer-value 1234 \
     --tx-in-collateral <TxHash#TxIx of a UTxO at your address> \
     --change-address $(cat user.addr) \
     --out-file unlock.txbody
@@ -463,24 +464,24 @@ $ cardano-cli conway transaction submit --tx-file unlock.tx --testnet-magic 42
 To compute the fee, `build` runs your validator locally with the real datum,
 redeemer, and transaction context &mdash; the same
 [CEK evaluation]({% link explanation/plutus-core.md %}) the chain performs.
-The guess is 42, the secret is 42, the script accepts, and the transaction
-goes through (fee: 314961 lovelace; script fees are higher because the
+The guess is 1234, the secret is 1234, the script accepts, and the transaction
+goes through (fee: 315005 lovelace; script fees are higher because the
 transaction carries and runs the script). The 10 ada (minus the fee) is back
 at your address:
 
 ```console
 $ cardano-cli conway query utxo --address $(cat user.addr) --testnet-magic 42
 {
-    "cf24ea0f559ab673632d191f523474807bc1c4e37b1081262e8dcc612b34149b#0": {
+    "64814126a28fb98c85ebef262dbbd02660fad8e0554bad68f8ba018414e122a0#1": {
         ...
         "value": {
-            "lovelace": 9685039
+            "lovelace": 989829439
         }
     },
-    "dd3781f26deca54d2766c4913350af84fc4aaab648c7bbdbad26048e92150b43#1": {
+    "a93ab90747aa42bb9c847c325eef14b8bc86aa160b6beccd9f854f89249e76ba#0": {
         ...
         "value": {
-            "lovelace": 989829483
+            "lovelace": 9684995
         }
     }
 }
@@ -497,7 +498,7 @@ $ cardano-cli conway transaction build \
     --tx-in <TxHash#TxIx of the new script output> \
     --tx-in-script-file lock.plutus \
     --tx-in-inline-datum-present \
-    --tx-in-redeemer-value 41 \
+    --tx-in-redeemer-value 4321 \
     --tx-in-collateral <TxHash#TxIx of a UTxO at your address> \
     --change-address $(cat user.addr) \
     --out-file steal.txbody
@@ -505,7 +506,7 @@ $ cardano-cli conway transaction build \
 
 The command fails before anything reaches the chain. `cardano-cli` prints
 the script hash, the full decoded `ScriptContext` the validator saw (the
-inputs, the inline datum `42`, the redeemer `41`, ...), and at the end:
+inputs, the inline datum `1234`, the redeemer `4321`, ...), and at the end:
 
 ```
 Script evaluation error: An error has occurred:

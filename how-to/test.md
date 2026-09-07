@@ -186,8 +186,8 @@ experimentation, not production.
 ## See also
 
 - [Lock and unlock funds on a local chain]({% link tutorials/lock-and-unlock.md %})
-  &mdash; deploy the same "must equal 42" rule on a local devnet and watch a
-  real node accept and reject it.
+  &mdash; deploy the same kind of "must equal N" rule on a local devnet and
+  watch a real node accept and reject it.
 - [The structure of a Plinth smart contract]({% link explanation/structure.md %})
   &mdash; where the off-chain test code sits, and applying parameters with
   `unsafeApplyCode`.
