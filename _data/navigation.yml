@@ -47,6 +47,8 @@ docs:
         url: /tutorials/first-smart-contract/
       - title: Your first smart contract with Plinth (Windows)
         url: /tutorials/first-smart-contract-windows/
+      - title: Lock and unlock funds on a local chain (Linux)
+        url: /tutorials/lock-and-unlock/
 
   - title: How-to guides
     url: /how-to/

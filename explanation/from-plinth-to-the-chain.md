@@ -148,6 +148,9 @@ way. Plinth's responsibility ends precisely where the UPLC begins.
   the other languages that converge on UPLC.
 - [Your first smart contract with Plinth]({% link tutorials/first-smart-contract.md %})
   &mdash; compile a validator and generate its blueprint, hands-on.
+- [Lock and unlock funds on a local chain]({% link tutorials/lock-and-unlock.md %})
+  &mdash; walk this whole path with commands: envelope, script address, and
+  the two transactions, on a local devnet.
 - [CIP-57: Plutus contract blueprints][cip57] &mdash; the blueprint standard.
 
 [cip57]: https://cips.cardano.org/cip/CIP-0057

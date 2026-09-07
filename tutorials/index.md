@@ -11,3 +11,6 @@ who want to get started, not for looking up specific facts.
 - [Your first smart contract with Plinth (Windows)]({% link tutorials/first-smart-contract-windows.md %})
   &mdash; the same tutorial, with the Windows-specific setup (Git long paths,
   Smart App Control, shell commands).
+- [Lock and unlock funds on a local chain (Linux)]({% link tutorials/lock-and-unlock.md %})
+  &mdash; write a real validator, deploy it on a local Cardano network with
+  Yaci DevKit, and spend from it with `cardano-cli`.

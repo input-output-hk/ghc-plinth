@@ -257,6 +257,9 @@ exactly the kind of code the Cardano ledger executes, produced from Haskell by
 
 ## Where to go next
 
+- [Lock and unlock funds on a local chain]({% link tutorials/lock-and-unlock.md %})
+  &mdash; the next tutorial: write a real validator, deploy it on a local
+  Cardano network, and spend from it with `cardano-cli`.
 - [Use uplc-ghc in a project]({% link how-to/use.md %}) &mdash; the same compiler
   setup, described on its own.
 - [The Plinth contract language]({% link explanation/plinth-language.md %})
