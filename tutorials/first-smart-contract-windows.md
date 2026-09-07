@@ -8,7 +8,7 @@ numbers. In this tutorial you will install `uplc-ghc`, create a tiny project
 from scratch, compile it, run it, and read the Plutus Core it produced.
 
 This tutorial targets **Windows**. It mirrors
-[the Linux tutorial]({% link tutorials/first-smart-contract.md %}); the
+[the Linux/macOS tutorial]({% link tutorials/first-smart-contract.md %}); the
 project files are the same, only the setup and the shell commands differ.
 
 ## Before you start
@@ -84,7 +84,7 @@ the two `install`/`set` commands above again to update.
 ## Step 2: Create the project
 
 Make a new directory and add the three files below. They are identical to the
-Linux tutorial's files.
+Linux/macOS tutorial's files.
 
 **`cabal.project`** wires up the build. It points cabal at `uplc-ghc` and its
 `ghc-pkg` (installed by ghcup as `uplc-ghc-pkg`, so that it does not collide

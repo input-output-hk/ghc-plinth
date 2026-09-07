@@ -43,7 +43,7 @@ docs:
   - title: Tutorials
     url: /tutorials/
     children:
-      - title: Your first smart contract with Plinth (Linux)
+      - title: Your first smart contract with Plinth (Linux, macOS)
         url: /tutorials/first-smart-contract/
       - title: Your first smart contract with Plinth (Windows)
         url: /tutorials/first-smart-contract-windows/
