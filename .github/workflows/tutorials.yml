@@ -1,0 +1,131 @@
+name: Tutorials
+
+# Test the tutorial example projects (examples/) the way a reader runs
+# them: the released uplc-ghc from the ghcup channel for the on-chain
+# projects, a stock GHC for the off-chain ones, and a Yaci DevKit devnet
+# for the end-to-end GHCi sessions. The weekly run catches bitrot in the
+# release channel, CHaP and the devkit images even when examples/ does
+# not change.
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    paths:
+      - 'examples/**'
+      - '.github/workflows/tutorials.yml'
+  push:
+    branches: [ghc-9.6-plinth]
+    paths:
+      - 'examples/**'
+      - '.github/workflows/tutorials.yml'
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: tutorials-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  tutorial-onchain:
+    name: tutorials / on-chain (uplc-ghc)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # Building plutus-ledger-api with uplc-ghc compiles makeLift-heavy
+    # modules that can spike past the runner RAM; see the same step in
+    # ci.yml.
+    - name: Add 16 GB swap
+      run: |
+        sudo fallocate -l 16G /mnt/swapfile
+        sudo chmod 600 /mnt/swapfile
+        sudo mkswap /mnt/swapfile
+        sudo swapon /mnt/swapfile
+
+    - name: Install the released uplc-ghc from the ghcup channel
+      run: |
+        ghcup config add-release-channel https://raw.githubusercontent.com/input-output-hk/ghc-plinth/ghcup-channel/ghcup-plinth.yaml
+        ghcup install plinth latest
+        ghcup set plinth latest
+        uplc-ghc --version
+        uplc-ghc-pkg --version
+
+    - name: Cache cabal store
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cabal/store
+          ~/.cabal/packages
+        key: tutorials-onchain-${{ runner.os }}-${{ hashFiles('examples/add/cabal.project', 'examples/lock/cabal.project') }}
+        restore-keys: tutorials-onchain-${{ runner.os }}-
+
+    - name: Build and run the on-chain projects
+      run: examples/test-tutorials.sh onchain
+
+    # The off-chain job's GHCi sessions spend from this validator.
+    - name: Upload lock.plutus
+      uses: actions/upload-artifact@v4
+      with:
+        name: lock-plutus
+        path: examples/lock/lock.plutus
+
+  tutorial-offchain:
+    name: tutorials / off-chain (cardano-api + devnet)
+    needs: tutorial-onchain
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    steps:
+
+    - uses: actions/checkout@v4
+      with:
+        submodules: false
+
+    # The cardano-api dependency closure needs more free space than the
+    # runner's / provides out of the box.
+    - name: Free disk space
+      uses: jlumbroso/free-disk-space@main
+      with:
+        tool-cache: false
+        haskell: false
+        large-packages: false
+
+    - name: Setup Haskell tools
+      uses: haskell-actions/setup@v2
+      with:
+        ghc-version: '9.6.7'
+        cabal-version: 'latest'
+
+    # liblmdb and liburing: cardano-lmdb and blockio-uring (both
+    # ouroboros-consensus dependencies) need the system libraries through
+    # pkg-config. The full pkg-config closure of the build plan is lmdb,
+    # liburing, zlib and libyaml; the runner image has the last two.
+    - name: Install system dependencies
+      run: sudo apt-get install -y socat liblmdb-dev liburing-dev
+
+    - name: Cache cabal store
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.cabal/store
+          ~/.cabal/packages
+        key: tutorials-offchain-${{ runner.os }}-${{ hashFiles('examples/lock-ghci/cabal.project') }}
+        restore-keys: tutorials-offchain-${{ runner.os }}-
+
+    # The GHCi sessions spend from the validator the on-chain job built.
+    - name: Download lock.plutus
+      uses: actions/download-artifact@v4
+      with:
+        name: lock-plutus
+        path: examples/lock
+
+    - name: Build the off-chain projects and run the devnet sessions
+      run: examples/test-tutorials.sh offchain-build e2e

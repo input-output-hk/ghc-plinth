@@ -18,3 +18,7 @@ files byte-identical to the code blocks of its tutorial page.
 
 `add/` and `lock/` build with the ghcup-installed compiler: `cabal build`
 with `uplc-ghc` and `uplc-ghc-pkg` on PATH.
+
+`test-tutorials.sh` tests all of it, including the GHCi sessions against a
+real devnet; CI runs it (.github/workflows/tutorials.yml) on changes to
+examples/ and weekly.
