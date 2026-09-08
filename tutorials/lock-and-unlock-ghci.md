@@ -29,9 +29,10 @@ You need:
   project selects it by itself, it does not need to be your default GHC);
 - [socat](http://www.dest-unreach.org/socat/), from your distribution's
   package manager (it connects GHCi to the devnet node);
-- the LMDB library with its development files (`liblmdb-dev` on
-  Debian/Ubuntu, `lmdb` on most other distributions): the consensus layer
-  that `cardano-api` pulls in links against it.
+- the LMDB and liburing libraries with their development files
+  (`liblmdb-dev` and `liburing-dev` on Debian/Ubuntu, `lmdb` and `liburing`
+  on most other distributions): the consensus layer that `cardano-api`
+  pulls in links against them.
 
 ## Step 1: Create the project
 
