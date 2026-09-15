@@ -23,15 +23,20 @@ set -euo pipefail
 #    output, just codegen drift between the patched-vs-stock GHC front-end;
 #  - real behavioural failures: the non-golden eval/property/trace tests.
 #
+# By default we run every suite, on all platforms. The plutus fork makes
+# plutus-ledger-api-plugin-test and plutus-tx-test buildable on Windows;
+# upstream still marks them `buildable: False` there for historical reasons.
+#
 # Override PLUGIN_TESTS to run a different set of suites, e.g.:
-#   PLUGIN_TESTS="plutus-tx-plugin:plutus-tx-plugin-tests \
-#                 plutus-tx-plugin:plutus-ledger-api-plugin-test \
-#                 plutus-tx-plugin:frontend-plugin-tests \
-#                 plutus-tx-plugin:size \
-#                 plutus-tx:plutus-tx-test"
+#   PLUGIN_TESTS="plutus-tx-plugin:plutus-tx-plugin-tests"
 # Set PLUGIN_TESTS= (empty) to skip the compiler suites and only run the
 # example smoke test.
-: ${PLUGIN_TESTS:="plutus-tx-plugin:plutus-tx-plugin-tests"}
+: ${PLUGIN_TESTS:="\
+plutus-tx-plugin:plutus-tx-plugin-tests \
+plutus-tx-plugin:plutus-ledger-api-plugin-test \
+plutus-tx-plugin:frontend-plugin-tests \
+plutus-tx-plugin:size \
+plutus-tx:plutus-tx-test"}
 
 
 # build Plinth test project
