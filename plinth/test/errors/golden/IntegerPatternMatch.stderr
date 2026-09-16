@@ -1,0 +1,67 @@
+
+IntegerPatternMatch.hs:13:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at IntegerPatternMatch.hs:13:10-44:
+             IntegerPatternMatch.isAnswer
+    Context: Compiling code:
+             \ (ds [Occ=Once1] :: GHC.Num.Integer.Integer) ->
+               case ds of ds [Occ=Once1!] { __DEFAULT ->
+               case ds of {
+                 GHC.Num.Integer.IS x1 [Occ=Once1!] ->
+                   GHC.Prim.tagToEnum#
+                     @GHC.Types.Bool
+                     (case x1 of {
+                        __DEFAULT -> 0#;
+                        42# -> 1#
+                      });
+                 GHC.Num.Integer.IP _ [Occ=Dead] -> GHC.Types.False;
+                 GHC.Num.Integer.IN _ [Occ=Dead] -> GHC.Types.False
+               }
+               }
+    Context: Compiling code:
+             case ds of ds [Occ=Once1!] { __DEFAULT ->
+             case ds of {
+               GHC.Num.Integer.IS x1 [Occ=Once1!] ->
+                 GHC.Prim.tagToEnum#
+                   @GHC.Types.Bool
+                   (case x1 of {
+                      __DEFAULT -> 0#;
+                      42# -> 1#
+                    });
+               GHC.Num.Integer.IP _ [Occ=Dead] -> GHC.Types.False;
+               GHC.Num.Integer.IN _ [Occ=Dead] -> GHC.Types.False
+             }
+             }
+    Context: Compiling code:
+             case ds of {
+               GHC.Num.Integer.IS x1 [Occ=Once1!] ->
+                 GHC.Prim.tagToEnum#
+                   @GHC.Types.Bool
+                   (case x1 of {
+                      __DEFAULT -> 0#;
+                      42# -> 1#
+                    });
+               GHC.Num.Integer.IP _ [Occ=Dead] -> GHC.Types.False;
+               GHC.Num.Integer.IN _ [Occ=Dead] -> GHC.Types.False
+             }
+    Context: Creating instantiated matcher for type: GHC.Num.Integer.Integer
+    Error: Unsupported feature: Cannot pattern match on a value of type 'Integer'.
+    
+           This usually happens when pattern matching on an integer literal,
+           for example:
+    
+             f 42 = ...
+             f n  = ...
+    
+           Plinth does not support pattern matching on 'Integer'. Use equality
+           from 'PlutusTx.Prelude' instead, for example:
+    
+             import PlutusTx.Prelude ((==))
+    
+             f n | n == 42   = ...
+                 | otherwise = ...
+    
+           Note: GHC can generate these unexpectedly, you may need '-fno-strictness', '-fno-specialise', '-fno-spec-constr', '-fno-unbox-strict-fields', or '-fno-unbox-small-strict-fields'.
+   |
+13 | code = $$(PlutusTx.compile [|| isAnswer ||])
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

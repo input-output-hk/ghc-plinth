@@ -1,0 +1,14 @@
+
+HaskellShow.hs:9:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at HaskellShow.hs:9:10-61:
+             GHC.Show.$fShowInteger_$cshow
+    Context: Compiling type: GHC.Num.Integer.Integer -> GHC.Base.String
+    Context: Compiling type: GHC.Base.String
+    Context: Compiling type: GHC.Types.Char
+    Context: Compiling data constructor type: GHC.Types.C#
+    Context: Compiling type: GHC.Prim.Char#
+    Error: Unsupported feature: Type constructor: GHC.Prim.Char#
+  |
+9 | code = $$(PlutusTx.compile [|| \x -> show (x :: Integer) ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

@@ -1,0 +1,9 @@
+
+HaskellOrd.hs:9:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at HaskellOrd.hs:9:10-61:
+             GHC.Num.Integer.integerLt
+    Error: Unsupported feature: GHC.Classes.Ord.<, use PlutusTx.Ord.Class.Ord
+  |
+9 | code = $$(PlutusTx.compile [|| \x -> x < (42 :: Integer) ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

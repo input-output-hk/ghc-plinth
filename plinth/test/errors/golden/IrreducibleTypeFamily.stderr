@@ -1,0 +1,12 @@
+
+IrreducibleTypeFamily.hs:15:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at IrreducibleTypeFamily.hs:15:10-44:
+             IrreducibleTypeFamily.identity
+    Context: Compiling type: IrreducibleTypeFamily.F GHC.Num.Integer.Integer
+                             -> IrreducibleTypeFamily.F GHC.Num.Integer.Integer
+    Context: Compiling type: IrreducibleTypeFamily.F GHC.Num.Integer.Integer
+    Error: Unsupported feature: Irreducible type family application: IrreducibleTypeFamily.F
+   |
+15 | code = $$(PlutusTx.compile [|| identity ||])
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

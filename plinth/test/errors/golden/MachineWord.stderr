@@ -1,0 +1,15 @@
+
+MachineWord.hs:9:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at MachineWord.hs:9:10-48:
+             GHC.Word.$fNumWord64_$cfromInteger (GHC.Num.Integer.IS 42#)
+    Context: Compiling code:
+             GHC.Word.$fNumWord64_$cfromInteger
+    Context: Compiling type: GHC.Num.Integer.Integer -> GHC.Word.Word64
+    Context: Compiling type: GHC.Word.Word64
+    Context: Compiling data constructor type: GHC.Word.W64#
+    Context: Compiling type: GHC.Prim.Word64#
+    Error: Unsupported feature: Type constructor: GHC.Prim.Word64#
+  |
+9 | code = $$(PlutusTx.compile [|| 42 :: Word64 ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

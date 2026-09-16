@@ -1,0 +1,13 @@
+
+Existential.hs:15:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at Existential.hs:15:10-41:
+             Existential.mkBox
+    Context: Compiling type: GHC.Num.Integer.Integer -> Existential.Box
+    Context: Compiling type: Existential.Box
+    Context: Compiling data constructor type: Existential.Box
+    Context: Compiling type: a
+    Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Type variable: a
+   |
+15 | code = $$(PlutusTx.compile [|| mkBox ||])
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
