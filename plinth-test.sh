@@ -31,7 +31,7 @@ set -euo pipefail
 #   PLUGIN_TESTS="plutus-tx-plugin:plutus-tx-plugin-tests"
 # Set PLUGIN_TESTS= (empty) to skip the compiler suites and only run the
 # example smoke test.
-: ${PLUGIN_TESTS:="\
+: ${PLUGIN_TESTS="\
 plutus-tx-plugin:plutus-tx-plugin-tests \
 plutus-tx-plugin:plutus-ledger-api-plugin-test \
 plutus-tx-plugin:frontend-plugin-tests \
@@ -105,6 +105,17 @@ CABAL_BUILD_ARGS="\
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} .
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} run ${CABAL_BUILD_ARGS} gen-examples
 
+    # Golden tests for the user-facing compile-time error messages.
+    # See Note [Error message golden tests] in
+    # plinth/test/errors/run-error-tests.sh. They reuse the package
+    # databases of the project built above, so they must run after it.
+    echo ""
+    echo "Running Plinth error-message golden tests..."
+    set +e
+    GHC="$GHC" ./errors/run-error-tests.sh
+    ERR_RC=$?
+    set -e
+
     # Run the Plinth compiler test-suites under uplc-ghc.
     # See Note [Plinth compiler test coverage].
     if [ -n "${PLUGIN_TESTS}" ]; then
@@ -137,6 +148,14 @@ CABAL_BUILD_ARGS="\
             echo "golden PIR/UPLC diffs are expected codegen drift; real"
             echo "regressions are the non-golden eval/property/trace tests."
         fi
+        if [ $ERR_RC -ne 0 ]; then
+            echo "plinth-test: error-message golden tests failed (exit $ERR_RC)"
+            exit 1
+        fi
         exit $RC
+    fi
+    if [ $ERR_RC -ne 0 ]; then
+        echo "plinth-test: error-message golden tests failed (exit $ERR_RC)"
+        exit 1
     fi
 )

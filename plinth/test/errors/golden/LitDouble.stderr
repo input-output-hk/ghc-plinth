@@ -1,0 +1,13 @@
+
+LitDouble.hs:8:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at LitDouble.hs:8:10-49:
+             GHC.Types.D# 1.5##
+    Context: Compiling code:
+             GHC.Types.D#
+    Context: Compiling data constructor type: GHC.Types.D#
+    Context: Compiling type: GHC.Prim.Double#
+    Error: Unsupported feature: Type constructor: GHC.Prim.Double#
+  |
+8 | code = $$(PlutusTx.compile [|| 1.5 :: Double ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

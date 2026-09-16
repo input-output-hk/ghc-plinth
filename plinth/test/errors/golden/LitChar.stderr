@@ -1,0 +1,11 @@
+
+LitChar.hs:8:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at LitChar.hs:8:10-39:
+             GHC.Types.C# 'x'#
+    Context: Compiling code:
+             'x'#
+    Error: Unsupported feature: Literal char
+  |
+8 | code = $$(PlutusTx.compile [|| 'x' ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

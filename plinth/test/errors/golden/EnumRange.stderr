@@ -1,0 +1,15 @@
+
+EnumRange.hs:8:1: error:
+    Plinth Compilation Error:
+    Context: Compiling definition at EnumRange.hs:8:1-4: code
+    Context: Compiling code:
+             GHC.Enum.$fEnumInteger_$cenumFromTo
+               (GHC.Num.Integer.IS 1#) (GHC.Num.Integer.IS 10#)
+    Context: Compiling code:
+             GHC.Enum.$fEnumInteger_$cenumFromTo (GHC.Num.Integer.IS 1#)
+    Context: Compiling code:
+             GHC.Enum.$fEnumInteger_$cenumFromTo
+    Error: Unsupported feature: Use of enumFromTo or enumFromThenTo, possibly via range syntax. Please use PlutusTx.Enum.enumFromTo or PlutusTx.Enum.enumFromThenTo instead.
+  |
+8 | code = $$(PlutusTx.compile [|| [1 .. 10] :: [Integer] ||])
+  | ^^^^

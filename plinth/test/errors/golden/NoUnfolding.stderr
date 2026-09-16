@@ -1,0 +1,10 @@
+
+NoUnfolding.hs:10:10: error:
+    Plinth Compilation Error:
+    Context: Compiling code at NoUnfolding.hs:10:10-45:
+             NoUnfoldingHelper.opaque
+    Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Variable NoUnfoldingHelper.opaque
+           No unfolding
+   |
+10 | code = $$(PlutusTx.compile [|| opaque 42 ||])
+   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
