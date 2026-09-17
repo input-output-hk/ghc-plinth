@@ -81,11 +81,16 @@ GHC_ARGS=(
 #    (e.g. "x_a5GN" -> "x", "wild_X0" -> "wild");
 #  - drop GHC --make progress lines ("[1 of 2] Compiling ...");
 #  - drop CRs (Windows).
+# POSIX sed only: BSD sed (macOS) has no \b, \x1b or \r escapes. The
+# unique pattern needs no trailing \b: the greedy [0-9a-zA-Z]* always
+# ends at a non-alphanumeric character.
+ESC=$(printf '\033')
+CR=$(printf '\r')
 normalize () {
-  sed -e 's/\x1b\[[0-9;]*m//g' \
-      -e 's/_[a-zA-Z][0-9][0-9a-zA-Z]*\b//g' \
+  sed -e "s/${ESC}\\[[0-9;]*m//g" \
+      -e 's/_[a-zA-Z][0-9][0-9a-zA-Z]*//g' \
       -e '/^\[ *[0-9][0-9]* of [0-9][0-9]*\]/d' \
-      -e 's/\r$//'
+      -e "s/${CR}\$//"
 }
 
 failures=0
