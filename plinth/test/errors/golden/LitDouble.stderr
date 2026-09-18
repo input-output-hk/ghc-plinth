@@ -1,5 +1,5 @@
 
-LitDouble.hs:8:10: error:
+LitDouble.hs:8:10: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling code at LitDouble.hs:8:10-49:
              GHC.Types.D# 1.5##

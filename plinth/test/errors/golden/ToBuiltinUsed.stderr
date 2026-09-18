@@ -1,8 +1,9 @@
 
-ToBuiltinUsed.hs:10:10: error:
+ToBuiltinUsed.hs:10:10: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling code at ToBuiltinUsed.hs:10:10-54:
              PlutusTx.Builtins.HasBuiltin.$fHasToBuiltinInteger1
+    Context: Compiling definition: PlutusTx.Builtins.HasBuiltin.$fHasToBuiltinInteger1
     Context: Compiling code:
              PlutusTx.Builtins.HasBuiltin.useToOpaque
                @(PlutusTx.Builtins.Internal.BuiltinInteger

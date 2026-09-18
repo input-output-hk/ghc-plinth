@@ -1,9 +1,9 @@
 
-MutualData.hs:17:1: error:
+MutualData.hs:17:1: error: [PLINTH-00002]
     Plinth Compilation Error:
     Context: Compiling definition at MutualData.hs:17:1-4: code
     Error: Error from the PIR compiler:
-           Unsupported construct: Mutually recursive datatypes ((recursive) let binding; from [ Ann {annInline = MayInline, annCase = NotSafeToDrop, annSrcSpans = { no-src-span }, annIsAsDataMatcher = False} ])
+           Unsupported construct: Mutually recursive datatypes: Forest, Rose ({ MutualData.hs:9:1-9:27 })
    |
 17 | code = $$(PlutusTx.compile [|| depth ||])
    | ^^^^
