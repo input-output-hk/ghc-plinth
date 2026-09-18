@@ -1,0 +1,9 @@
+
+EnumMethod.hs:9:10: error: [PLINTH-00004]
+    Plinth Compilation Error:
+    Context: Compiling code at EnumMethod.hs:9:10-61:
+             GHC.Enum.$fEnumInteger_$csucc
+    Error: Unsupported feature: GHC.Enum.Enum.succ, use PlutusTx.Enum.Enum
+  |
+9 | code = $$(PlutusTx.compile [|| \x -> succ (x :: Integer) ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

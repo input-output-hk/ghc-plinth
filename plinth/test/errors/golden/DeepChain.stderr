@@ -1,10 +1,10 @@
 
-NoUnfolding.hs:10:10: error: [PLINTH-00005]
+DeepChain.hs:12:11: error: [PLINTH-00005]
     Plinth Compilation Error:
-    Context: Compiling code at NoUnfolding.hs:10:10-45:
+    Context: Compiling code at DeepChain.hs:12:11-16:
              NoUnfoldingHelper.opaque
     Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Variable NoUnfoldingHelper.opaque
            No unfolding
    |
-10 | code = $$(PlutusTx.compile [|| opaque 42 ||])
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 | inner i = opaque i
+   |           ^^^^^^

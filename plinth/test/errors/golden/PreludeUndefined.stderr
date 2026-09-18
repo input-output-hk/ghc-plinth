@@ -1,0 +1,9 @@
+
+PreludeUndefined.hs:9:10: error: [PLINTH-00004]
+    Plinth Compilation Error:
+    Context: Compiling code at PreludeUndefined.hs:9:10-45:
+             GHC.Err.undefined
+    Error: Unsupported feature: GHC.Err.undefined, use PlutusTx.Prelude.error or PlutusTx.Prelude.traceError
+  |
+9 | code = $$(PlutusTx.compile [|| undefined ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

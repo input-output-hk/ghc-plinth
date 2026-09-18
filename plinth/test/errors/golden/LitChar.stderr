@@ -1,5 +1,5 @@
 
-LitChar.hs:8:10: error:
+LitChar.hs:8:10: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling code at LitChar.hs:8:10-39:
              GHC.Types.C# 'x'#

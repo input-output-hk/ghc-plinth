@@ -1,5 +1,5 @@
 
-MachineInt.hs:8:10: error:
+MachineInt.hs:8:10: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling code at MachineInt.hs:8:10-44:
              GHC.Types.I# 1#

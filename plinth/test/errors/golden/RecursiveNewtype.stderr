@@ -1,13 +1,12 @@
 
-RecursiveNewtype.hs:14:10: error:
+RecursiveNewtype.hs:10:1: error: [PLINTH-00004]
     Plinth Compilation Error:
-    Context: Compiling code at RecursiveNewtype.hs:14:10-38:
-             RecursiveNewtype.hd
+    Context: Compiling definition at RecursiveNewtype.hs:10:1-2: RecursiveNewtype.hd
     Context: Compiling type: RecursiveNewtype.Stream -> GHC.Num.Integer.Integer
     Context: Compiling type: RecursiveNewtype.Stream
     Context: Compiling type: (GHC.Num.Integer.Integer, RecursiveNewtype.Stream)
     Context: Compiling type: RecursiveNewtype.Stream
     Error: Unsupported feature: Recursive newtypes, use data: RecursiveNewtype.Stream
    |
-14 | code = $$(PlutusTx.compile [|| hd ||])
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+10 | hd (Stream (x, _)) = x
+   | ^^

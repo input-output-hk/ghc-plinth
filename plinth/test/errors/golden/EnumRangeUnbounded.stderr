@@ -1,0 +1,9 @@
+
+EnumRangeUnbounded.hs:8:10: error: [PLINTH-00004]
+    Plinth Compilation Error:
+    Context: Compiling code at EnumRangeUnbounded.hs:8:10-55:
+             GHC.Enum.$fEnumInteger_$cenumFrom
+    Error: Unsupported feature: Unbounded range syntax: unbounded ranges are not supported
+  |
+8 | code = $$(PlutusTx.compile [|| [1 ..] :: [Integer] ||])
+  |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
