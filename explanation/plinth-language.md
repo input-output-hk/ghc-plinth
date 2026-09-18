@@ -20,7 +20,9 @@ higher-order functions, recursion, parametric polymorphism, and type classes
 &mdash; and give up the things that do not, such as `IO`, and arbitrary library
 code that was never written to be compiled on-chain. As a small but telling
 example, on-chain integers are arbitrary-precision `Integer` (which maps to the
-UPLC `integer` builtin), never the machine-word `Int`.
+UPLC `integer` builtin), never the machine-word `Int`. [Differences from
+Haskell]({% link explanation/differences-from-haskell.md %}) catalogs the
+unsupported features, the errors they trigger, and the reasons behind them.
 
 ## The Plinth prelude
 
@@ -117,6 +119,8 @@ in detail.
 
 ## Further reading
 
+- [Differences from Haskell]({% link explanation/differences-from-haskell.md %})
+  &mdash; the unsupported features, the errors they trigger, and why.
 - [The structure of a Plinth smart contract]({% link explanation/structure.md %})
   &mdash; where this code sits in a project, and the `compile` splice.
 - [From Plinth to the chain]({% link explanation/from-plinth-to-the-chain.md %})
