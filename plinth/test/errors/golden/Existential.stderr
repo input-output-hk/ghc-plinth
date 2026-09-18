@@ -1,13 +1,10 @@
 
-Existential.hs:15:10: error:
+Existential.hs:11:1: error: [PLINTH-00004]
     Plinth Compilation Error:
-    Context: Compiling code at Existential.hs:15:10-41:
-             Existential.mkBox
+    Context: Compiling definition at Existential.hs:11:1-5: Existential.mkBox
     Context: Compiling type: GHC.Num.Integer.Integer -> Existential.Box
     Context: Compiling type: Existential.Box
-    Context: Compiling data constructor type: Existential.Box
-    Context: Compiling type: a
-    Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Type variable: a
+    Error: Unsupported feature: Existential quantification in data constructor Existential.Box
    |
-15 | code = $$(PlutusTx.compile [|| mkBox ||])
-   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+11 | mkBox = Box
+   | ^^^^^

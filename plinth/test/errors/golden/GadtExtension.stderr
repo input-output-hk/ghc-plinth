@@ -1,5 +1,5 @@
 
-GadtExtension.hs:16:1: error:
+GadtExtension.hs:16:1: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling definition at GadtExtension.hs:16:1-4: code
     Error: Unsupported feature: Following extensions are not supported: GADTs

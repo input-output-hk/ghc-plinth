@@ -1,5 +1,5 @@
 
-PolyKindsExtension.hs:13:1: error:
+PolyKindsExtension.hs:13:1: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling definition at PolyKindsExtension.hs:13:1-4: code
     Error: Unsupported feature: Following extensions are not supported: PolyKinds

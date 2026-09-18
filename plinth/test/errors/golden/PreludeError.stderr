@@ -1,33 +1,9 @@
 
-PreludeError.hs:9:10: error:
+PreludeError.hs:9:10: error: [PLINTH-00004]
     Plinth Compilation Error:
     Context: Compiling code at PreludeError.hs:9:10-48:
              GHC.Err.error
-               @GHC.Types.LiftedRep
-               @GHC.Num.Integer.Integer
-               ((GHC.Stack.Types.pushCallStack
-                   (GHC.CString.unpackCString# "error"#,
-                    GHC.Stack.Types.SrcLoc
-                      (GHC.CString.unpackCString# "main"#)
-                      (GHC.CString.unpackCString# "PreludeError"#)
-                      (GHC.CString.unpackCString# "PreludeError.hs"#)
-                      (GHC.Types.I# 9#)
-                      (GHC.Types.I# 10#)
-                      (GHC.Types.I# 9#)
-                      (GHC.Types.I# 49#))
-                   GHC.Stack.Types.emptyCallStack)
-                `cast` (Sym (GHC.Classes.N:IP[0]
-                                 <"callStack">_N <GHC.Stack.Types.CallStack>_N)
-                        :: GHC.Stack.Types.CallStack
-                           GHC.Types.~~ (?callStack::GHC.Stack.Types.CallStack)))
-    Context: Compiling code:
-             GHC.Err.error @GHC.Types.LiftedRep @GHC.Num.Integer.Integer
-    Context: Compiling code:
-             GHC.Err.error @GHC.Types.LiftedRep
-    Context: Compiling code:
-             GHC.Err.error
-    Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Variable GHC.Err.error
-           No unfolding
+    Error: Unsupported feature: GHC.Err.error, use PlutusTx.Prelude.error or PlutusTx.Prelude.traceError
   |
 9 | code = $$(PlutusTx.compile [|| error "boom" ||])
   |          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
