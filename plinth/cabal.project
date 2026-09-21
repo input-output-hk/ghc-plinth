@@ -17,16 +17,12 @@ index-state:
   , cardano-haskell-packages 2026-08-05T05:00:53Z
 
 -- Mirror the upstream plutus cabal.project solver directives (the submodule's
--- own cabal.project is not used by this build). microstache/deriving-aeson cap
--- aeson <2.3, but plutus-core 1.66 needs aeson >=2.3.
+-- own cabal.project is not used by this build).
 constraints:
   -- https://github.com/IntersectMBO/plutus/pull/7236
   , setup.optparse-applicative >=0.19.0.0
 
 allow-newer:
-  , deriving-aeson:aeson
-  , microstache:aeson
-  , turtle:containers
   , turtle:optparse-applicative
   -- https://github.com/tweag/HaskellR/pull/420
   , inline-r:singletons-th

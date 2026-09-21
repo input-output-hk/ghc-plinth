@@ -12,7 +12,7 @@ on:
     inputs:
       release_version:
         description: >-
-          Build as a release stamped with this version (e.g. 9.6.166.1) instead
+          Build as a release stamped with this version (e.g. 9.6.169.1) instead
           of the usual dated snapshot version. Leave empty for an ordinary build.
         required: false
         default: ''
@@ -31,7 +31,7 @@ permissions:
   contents: read
 
 env:
-  # The version being released ("9.6.166.1", or "v9.6.166.1" -- the steps below
+  # The version being released ("9.6.169.1", or "v9.6.169.1" -- the steps below
   # strip the "v"), empty on ordinary pushes and PRs. It is passed to
   # plinth-build.sh as RELEASE_VERSION, which stamps the compiler with exactly
   # that version instead of the usual <base>.<date>. See Note [Release
