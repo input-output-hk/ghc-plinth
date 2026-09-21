@@ -77,9 +77,6 @@ constraints:
   , setup.optparse-applicative >=0.19.0.0
 
 allow-newer:
-  , deriving-aeson:aeson
-  , microstache:aeson
-  , turtle:containers
   , turtle:optparse-applicative
   -- https://github.com/tweag/HaskellR/pull/420
   , inline-r:singletons-th

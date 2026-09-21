@@ -39,7 +39,7 @@ DEV_CONFIGURE_ARGS="$DEFAULT_CONFIGURE_ARGS"
 : ${REBUILD:=0} # set to 1 to force rebuild
 : ${RELEASE:=0} # set to 1 to build release version including documentation (more build dependencies)
 : ${BINDIST:=0} # set to 1 to produce the fixed-up uplc-ghc bindist + archive while keeping the dev (assertions) flavour
-: ${RELEASE_VERSION:=} # set to e.g. 9.6.166.1 to stamp the compiler with exactly that version. See Note [Release versioning]
+: ${RELEASE_VERSION:=} # set to e.g. 9.6.169.1 to stamp the compiler with exactly that version. See Note [Release versioning]
 
 # program locations
 : ${GHC:=$(command -v ghc-9.6.7 2>/dev/null || true)}
@@ -145,13 +145,13 @@ fi
 # explicitly below and never inherited from the environment.
 #
 # configure.ac carries the three-component base (9.6.<plinth>) and a plain build
-# is stamped 9.6.166.<date>. A release build sets RELEASE_VERSION=9.6.166.1: the
+# is stamped 9.6.169.<date>. A release build sets RELEASE_VERSION=9.6.169.1: the
 # base is rewritten to that full version and RELEASE=YES keeps configure from
 # appending anything, so the compiler reports exactly the released version.
 #
 # The release counter lives in the release tag (CI passes RELEASE_VERSION=${TAG#v})
 # rather than in configure.ac, because a committed four-component base would make
-# every later snapshot build five components (9.6.166.1.20260803) -- one more
+# every later snapshot build five components (9.6.169.1.20260803) -- one more
 # than the tools accept.
 CONFIGURE_RELEASE=NO
 if [ -n "$RELEASE_VERSION" ]; then
