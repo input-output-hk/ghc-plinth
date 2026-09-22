@@ -90,7 +90,7 @@ index-state:
 source-repository-package
   type: git
   location: https://github.com/input-output-hk/ghc-plinth-plutus
-  tag: 2e582ecde824238f927322d208740322eada8115
+  tag: adcc5b44cbc1092594fc82aecdf292258ef4c99a
   subdir: plutus-tx
           plutus-core
           plutus-ledger-api
@@ -130,11 +130,6 @@ package sodium-clib
   -- disable -fPIE: the static boot libraries are not built with it, so the
   -- link phase fails otherwise.
   configure-options: --enable-pie=no
-
--- criterion (a plutus-core dependency) pulls microstache, whose aeson upper
--- bound predates the aeson >= 2.3 that plutus-core requires.
-allow-newer:
-  , microstache:aeson
 ```
 
 Use the `ghc-plinth-plutus` commit that matches your `uplc-ghc`, as in the
@@ -255,11 +250,11 @@ $ head -c 130 lock.plutus
 {
     "type": "PlutusScriptV3",
     "description": "lock validator",
-    "cborHex": "590ab40101009800aab9daba4aba2ab9aaab9eaba1ab9
+    "cborHex": "5905d20101009800aba4aba1ab9c4888c8c8c8c8c8c8c
 ```
 
 `cborHex` is the on-chain script: the compiled UPLC, serialised with flat,
-wrapped in a CBOR bytestring (`590ab4` is the CBOR header), and hex-encoded.
+wrapped in a CBOR bytestring (`5905d2` is the CBOR header), and hex-encoded.
 That one field is the entire on-chain artifact.
 
 **Use a recent cardano-cli with this file.** Before 2025, envelopes carried
@@ -352,7 +347,7 @@ for everyone who compiles this exact program with this exact compiler:
 
 ```console
 $ cat script.addr
-addr_test1wr25q46ju9a3eufd780mkvcmzffmmxa4g3vv8azmhgjs0cggkp9sy
+addr_test1wpwwelzpzfsgx034uqfq92msh4njfeywasm43xxsws978sqzs97m5
 ```
 
 ## Step 6: Fund your wallet
@@ -421,7 +416,7 @@ The funds are now at the script address, with the datum stored inline:
 $ cardano-cli conway query utxo --address $(cat script.addr) --testnet-magic 42
 {
     "64814126a28fb98c85ebef262dbbd02660fad8e0554bad68f8ba018414e122a0#0": {
-        "address": "addr_test1wr25q46ju9a3eufd780mkvcmzffmmxa4g3vv8azmhgjs0cggkp9sy",
+        "address": "addr_test1wpwwelzpzfsgx034uqfq92msh4njfeywasm43xxsws978sqzs97m5",
         "inlineDatum": {
             "int": 1234
         },

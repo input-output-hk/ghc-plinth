@@ -411,7 +411,7 @@ $ cabal repl
 ghci> putStrLn . bech32 =<< walletAddress
 addr_test1vqtrkpagy3affqvz8eny4d8vuhhywdz5yn8gpjt2n8xrw9g52mc72
 ghci> putStrLn . bech32 =<< scriptAddress
-addr_test1wr25q46ju9a3eufd780mkvcmzffmmxa4g3vv8azmhgjs0cggkp9sy
+addr_test1wpwwelzpzfsgx034uqfq92msh4njfeywasm43xxsws978sqzs97m5
 ```
 
 The first call created `user.skey` and shows your wallet address; yours will
