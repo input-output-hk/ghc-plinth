@@ -176,9 +176,7 @@ ghcupDownloads:
                       setName: uplc-ghc.exe
                   preserveMtimes: true
       9.6.166.2:
-        viTags:
-          - Latest
-          - Recommended
+        viTags: []
         viReleaseDay: 2026-08-26
         viArch:
           A_ARM64:
@@ -348,6 +346,199 @@ ghcupDownloads:
                 dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.166.2/ghc-9.6.166.2-x86_64-unknown-mingw32.tar.xz"
                 dlHash: 19f3a52a2ecb835d5aac697e5bfa27f55e5a2a2c47268d73cbf764b2286c16b0
                 dlSubdir: ghc-9.6.166.2-x86_64-unknown-mingw32
+                dlInstallSpec:
+                  exeRules:
+                    - installPattern:
+                        - "bin/**"
+                  dataRules:
+                    - installPattern:
+                        - "doc/**"
+                        - "lib/**"
+                        - "man/**"
+                        - "mingw/**"
+                  exeSymLinked:
+                    - target: bin/uplc-ghc.exe
+                      linkName: "uplc-ghc-${PKGVER}.exe"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc.exe
+                    - target: bin/ghc-pkg.exe
+                      linkName: "uplc-ghc-pkg-${PKGVER}.exe"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc-pkg.exe
+                  preserveMtimes: true
+      9.6.169.1:
+        viTags:
+          - Latest
+          - Recommended
+        viReleaseDay: 2026-09-22
+        viArch:
+          A_ARM64:
+            Linux_Alpine:
+              unknown_versioning:
+                dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.169.1/ghc-9.6.169.1-aarch64-alpine-linux-musl.tar.xz"
+                dlHash: f775096679ec72808e7433fe29869820ad5d4d4f3988f359366b0f4ded54db13
+                dlSubdir: ghc-9.6.169.1-aarch64-alpine-linux-musl
+                dlInstallSpec:
+                  exeRules: []
+                  dataRules: []
+                  configure:
+                    configFile: configure
+                    configArgs:
+                      - "--prefix=${PREFIX}"
+                      - "--disable-ld-override"
+                  make:
+                    makeArgs:
+                      - install
+                    makeEnv:
+                      env:
+                        -
+                          - DESTDIR
+                          - "${TMPDIR}"
+                      union: PreferSpec
+                  exeSymLinked:
+                    - target: bin/uplc-ghc
+                      linkName: "uplc-ghc-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc
+                    - target: bin/ghc-pkg
+                      linkName: "uplc-ghc-pkg-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc-pkg
+                  preserveMtimes: true
+            Darwin:
+              unknown_versioning:
+                dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.169.1/ghc-9.6.169.1-aarch64-apple-darwin.tar.xz"
+                dlHash: 0a14de60e4274fd2fa6d81807804f0ce081653db3039fe08af9093deb12979b9
+                dlSubdir: ghc-9.6.169.1-aarch64-apple-darwin
+                dlInstallSpec:
+                  exeRules: []
+                  dataRules: []
+                  configure:
+                    configFile: configure
+                    configArgs:
+                      - "--prefix=${PREFIX}"
+                      - "--disable-ld-override"
+                  make:
+                    makeArgs:
+                      - install
+                    makeEnv:
+                      env:
+                        -
+                          - DESTDIR
+                          - "${TMPDIR}"
+                      union: PreferSpec
+                  exeSymLinked:
+                    - target: bin/uplc-ghc
+                      linkName: "uplc-ghc-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc
+                    - target: bin/ghc-pkg
+                      linkName: "uplc-ghc-pkg-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc-pkg
+                  preserveMtimes: true
+            Linux_UnknownLinux:
+              unknown_versioning:
+                dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.169.1/ghc-9.6.169.1-aarch64-unknown-linux.tar.xz"
+                dlHash: 5baa36546906baa191de17929765440b1a16beace2a530c3d949bfdd900c3c37
+                dlSubdir: ghc-9.6.169.1-aarch64-unknown-linux
+                dlInstallSpec:
+                  exeRules: []
+                  dataRules: []
+                  configure:
+                    configFile: configure
+                    configArgs:
+                      - "--prefix=${PREFIX}"
+                      - "--disable-ld-override"
+                  make:
+                    makeArgs:
+                      - install
+                    makeEnv:
+                      env:
+                        -
+                          - DESTDIR
+                          - "${TMPDIR}"
+                      union: PreferSpec
+                  exeSymLinked:
+                    - target: bin/uplc-ghc
+                      linkName: "uplc-ghc-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc
+                    - target: bin/ghc-pkg
+                      linkName: "uplc-ghc-pkg-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc-pkg
+                  preserveMtimes: true
+          A_64:
+            Linux_Alpine:
+              unknown_versioning:
+                dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.169.1/ghc-9.6.169.1-x86_64-unknown-linux-musl.tar.xz"
+                dlHash: 92e394c32ce1ff9a406fd549d3f298ba1486994cfb1d1fb42b7730c443c8fbc5
+                dlSubdir: ghc-9.6.169.1-x86_64-unknown-linux-musl
+                dlInstallSpec:
+                  exeRules: []
+                  dataRules: []
+                  configure:
+                    configFile: configure
+                    configArgs:
+                      - "--prefix=${PREFIX}"
+                      - "--disable-ld-override"
+                  make:
+                    makeArgs:
+                      - install
+                    makeEnv:
+                      env:
+                        -
+                          - DESTDIR
+                          - "${TMPDIR}"
+                      union: PreferSpec
+                  exeSymLinked:
+                    - target: bin/uplc-ghc
+                      linkName: "uplc-ghc-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc
+                    - target: bin/ghc-pkg
+                      linkName: "uplc-ghc-pkg-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc-pkg
+                  preserveMtimes: true
+            Linux_UnknownLinux:
+              unknown_versioning:
+                dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.169.1/ghc-9.6.169.1-x86_64-unknown-linux.tar.xz"
+                dlHash: 3471bf972efb8d434e9ada13ec39244aea002fd0e75981067bdd2a7ea9c12d32
+                dlSubdir: ghc-9.6.169.1-x86_64-unknown-linux
+                dlInstallSpec:
+                  exeRules: []
+                  dataRules: []
+                  configure:
+                    configFile: configure
+                    configArgs:
+                      - "--prefix=${PREFIX}"
+                      - "--disable-ld-override"
+                  make:
+                    makeArgs:
+                      - install
+                    makeEnv:
+                      env:
+                        -
+                          - DESTDIR
+                          - "${TMPDIR}"
+                      union: PreferSpec
+                  exeSymLinked:
+                    - target: bin/uplc-ghc
+                      linkName: "uplc-ghc-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc
+                    - target: bin/ghc-pkg
+                      linkName: "uplc-ghc-pkg-${PKGVER}"
+                      pVPMajorLinks: true
+                      setName: uplc-ghc-pkg
+                  preserveMtimes: true
+            Windows:
+              unknown_versioning:
+                dlUri: "https://github.com/input-output-hk/ghc-plinth/releases/download/v9.6.169.1/ghc-9.6.169.1-x86_64-unknown-mingw32.tar.xz"
+                dlHash: e456331ae620c87d2594bdb22aa097b21dfe89aab8a41fc4153b816c6884c5ea
+                dlSubdir: ghc-9.6.169.1-x86_64-unknown-mingw32
                 dlInstallSpec:
                   exeRules:
                     - installPattern:
