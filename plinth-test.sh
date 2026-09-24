@@ -8,6 +8,23 @@ set -euo pipefail
 # JOBS=1 there to build packages serially.
 : ${JOBS:=}
 
+# Retry a command a few times, 30s apart. Use it for the network-facing
+# cabal update: hackage-security also queries hackage.haskell.org mirrors,
+# and one bad mirror fails the whole command (a 403 from the dream.io
+# mirror killed a CI run).
+retry() {
+  local tries=$1 i
+  shift
+  for i in $(seq 1 "$tries"); do
+    if "$@"; then return 0; fi
+    if [ "$i" -lt "$tries" ]; then
+      echo "attempt $i/$tries failed: $*; retrying in 30s" >&2
+      sleep 30
+    fi
+  done
+  return 1
+}
+
 # Note [Plinth compiler test coverage]
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 # The example project (plinth/test) is only a smoke test: it checks that
@@ -101,7 +118,7 @@ CABAL_BUILD_ARGS="\
         rm -rf _build
     fi
     echo "Building Plinth test project... current dir: $(pwd)"
-    cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
+    retry 3 cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} update
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} build ${CABAL_BUILD_ARGS} .
     cabal ${CABAL_PROJECT_ARGS} ${CABAL_ARGS} run ${CABAL_BUILD_ARGS} gen-examples
 

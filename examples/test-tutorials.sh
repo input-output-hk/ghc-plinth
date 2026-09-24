@@ -25,6 +25,23 @@ DEVKIT_DIR="$HOME/.yaci-devkit"
 
 log() { printf '\n=== %s\n' "$*"; }
 
+# Retry a command a few times, 30s apart. Use it for the network-facing
+# cabal update: hackage-security also queries hackage.haskell.org mirrors,
+# and one bad mirror fails the whole command (a 403 from the dream.io
+# mirror killed a CI run).
+retry() {
+  local tries=$1 i
+  shift
+  for i in $(seq 1 "$tries"); do
+    if "$@"; then return 0; fi
+    if [ "$i" -lt "$tries" ]; then
+      echo "attempt $i/$tries failed: $*; retrying in 30s" >&2
+      sleep 30
+    fi
+  done
+  return 1
+}
+
 # ---------------------------------------------------------------------------
 # Stage: onchain
 # ---------------------------------------------------------------------------
@@ -32,7 +49,7 @@ log() { printf '\n=== %s\n' "$*"; }
 stage_onchain() {
   log "onchain: examples/add"
   ( cd "$EXAMPLES_DIR/add"
-    cabal update
+    retry 3 cabal update
     cabal build
     cabal run -v0 plinth-add
     grep -F 'addInteger' add.uplc
@@ -56,7 +73,7 @@ stage_offchain_build() {
   for project in lock-ghci lock-ghci-exp; do
     log "offchain-build: examples/$project"
     ( cd "$EXAMPLES_DIR/$project"
-      cabal update
+      retry 3 cabal update
       cabal build
     )
   done
