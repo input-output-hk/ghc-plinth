@@ -46,14 +46,7 @@ runs:
 
   - name: Init and update submodules
     shell: bash
-    run: |
-     git submodule sync
-     # Shallow (single-commit) submodule clones: the build never needs
-     # submodule history, and these 29 submodules (notably plutus) carry a
-     # lot of it. --jobs fetches them in parallel. GitHub allows fetching
-     # the pinned SHA directly, so depth 1 works even when it isn't a
-     # branch tip.
-     git submodule update --init --recursive --depth 1 --jobs 4
+    run: bash .github/fetch-submodules.sh
 
   - uses: haskell-actions/setup@v2
     name: Setup Haskell tools
