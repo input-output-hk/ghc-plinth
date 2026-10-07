@@ -1,5 +1,5 @@
--- Helper for the NoUnfolding case: a function without an
--- INLINABLE pragma and with an unfolding hidden by NOINLINE.
+-- Helper for the NoUnfolding case: NOINLINE stops uplc-ghc from
+-- exposing the unfolding of this function.
 module NoUnfoldingHelper (opaque) where
 
 opaque :: Integer -> Integer

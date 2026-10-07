@@ -11,7 +11,6 @@ data Forest = Forest [Rose]
 depth :: Rose -> Integer
 depth (Rose (Forest [])) = 1
 depth (Rose (Forest (r : _))) = 1 P.+ depth r
-{-# INLINABLE depth #-}
 
 code :: CompiledCode (Rose -> Integer)
 code = $$(PlutusTx.compile [|| depth ||])

@@ -1,8 +1,8 @@
 
-PolyKindsExtension.hs:13:1: error: [PLINTH-00004]
+PolyKindsExtension.hs:12:1: error: [PLINTH-00004]
     Plinth Compilation Error:
-    Context: Compiling definition at PolyKindsExtension.hs:13:1-4: code
+    Context: Compiling definition at PolyKindsExtension.hs:12:1-4: code
     Error: Unsupported feature: Following extensions are not supported: PolyKinds
    |
-13 | code = $$(PlutusTx.compile [|| identity ||])
+12 | code = $$(PlutusTx.compile [|| identity ||])
    | ^^^^

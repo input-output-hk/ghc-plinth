@@ -11,7 +11,6 @@ import PlutusTx.Prelude qualified as PlutusTx
 type AuctionMintingParams = PubKeyHash
 type AuctionMintingRedeemer = ()
 
-{-# INLINEABLE auctionTypedMintingPolicy #-}
 auctionTypedMintingPolicy ::
   AuctionMintingParams ->
   ScriptContext ->

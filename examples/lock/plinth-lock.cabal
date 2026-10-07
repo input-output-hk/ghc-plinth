@@ -13,8 +13,7 @@ executable plinth-lock
     , plutus-ledger-api
   ghc-options:
     -fexternal-interpreter
-    -fobject-code -fno-full-laziness -fno-ignore-interface-pragmas
-    -fno-omit-interface-pragmas -fno-spec-constr -fno-specialise
-    -fno-strictness -fno-unbox-small-strict-fields
+    -fobject-code -fno-full-laziness -fno-spec-constr
+    -fno-specialise -fno-strictness -fno-unbox-small-strict-fields
     -fno-unbox-strict-fields
     -fplugin-opt Plinth.Plugin:target-version=1.1.0

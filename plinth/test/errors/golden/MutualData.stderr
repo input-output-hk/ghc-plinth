@@ -1,9 +1,9 @@
 
-MutualData.hs:17:1: error: [PLINTH-00002]
+MutualData.hs:16:1: error: [PLINTH-00002]
     Plinth Compilation Error:
-    Context: Compiling definition at MutualData.hs:17:1-4: code
+    Context: Compiling definition at MutualData.hs:16:1-4: code
     Error: Error from the PIR compiler:
            Unsupported construct: Mutually recursive datatypes: Forest, Rose ({ MutualData.hs:9:1-9:27 })
    |
-17 | code = $$(PlutusTx.compile [|| depth ||])
+16 | code = $$(PlutusTx.compile [|| depth ||])
    | ^^^^

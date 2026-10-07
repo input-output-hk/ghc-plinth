@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 -- Unsupported construct: reference to a function with no
--- unfolding (missing INLINABLE pragma).
+-- unfolding (hidden by a NOINLINE pragma).
 module NoUnfolding where
 
 import NoUnfoldingHelper (opaque)

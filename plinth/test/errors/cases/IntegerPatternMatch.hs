@@ -7,7 +7,6 @@ import PlutusTx
 isAnswer :: Integer -> Bool
 isAnswer 42 = True
 isAnswer _ = False
-{-# INLINABLE isAnswer #-}
 
 code :: CompiledCode (Integer -> Bool)
 code = $$(PlutusTx.compile [|| isAnswer ||])

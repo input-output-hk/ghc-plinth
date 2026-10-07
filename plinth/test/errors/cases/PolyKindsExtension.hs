@@ -7,7 +7,6 @@ import PlutusTx
 
 identity :: Integer -> Integer
 identity x = x
-{-# INLINABLE identity #-}
 
 code :: CompiledCode (Integer -> Integer)
 code = $$(PlutusTx.compile [|| identity ||])
