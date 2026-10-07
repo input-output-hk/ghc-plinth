@@ -247,9 +247,7 @@ jobs:
 
     # The static plugin baked into uplc-ghc is built from the plutus submodule.
     - name: Init and update submodules
-      run: |
-        git submodule sync
-        git submodule update --init --recursive --depth 1 --jobs 4
+      run: bash .github/fetch-submodules.sh
 
     # BINDIST=1 produces the fixed-up uplc-ghc bindist (+ .tar.xz). plinth-build.sh
     # appends a -musl suffix to the archive name when run on musl libc.
@@ -306,9 +304,7 @@ jobs:
     # plinth/test/cabal.project pulls plutus-tx/plutus-core/plutus-ledger-api
     # from the plutus submodule.
     - name: Init and update submodules
-      run: |
-        git submodule sync
-        git submodule update --init --recursive --depth 1 --jobs 4
+      run: bash .github/fetch-submodules.sh
 
     # A single Plinth plugin compile of a makeLift-heavy module
     # (PlutusLedgerApi.V3.Contexts) spikes past the ~16 GB runner RAM and gets
@@ -395,14 +391,7 @@ jobs:
     # no credentials are needed.
     - name: Init and update submodules
       shell: bash
-      run: |
-       git submodule sync
-       # Shallow (single-commit) submodule clones: the build never needs
-       # submodule history, and these 29 submodules (notably plutus) carry a
-       # lot of it. --jobs fetches them in parallel. GitHub allows fetching
-       # the pinned SHA directly, so depth 1 works even when it isn't a
-       # branch tip.
-       git submodule update --init --recursive --depth 1 --jobs 4
+      run: bash .github/fetch-submodules.sh
 
     # MINGW64 toolchain + the autotools/python/sphinx needed by the build.
     # path-type: inherit keeps the Windows PATH (incl. the GHC/cabal installed
@@ -473,11 +462,7 @@ jobs:
     # plutus-tx/plutus-core/plutus-ledger-api from the plutus submodule.
     - name: Init and update submodules
       shell: bash
-      run: |
-       git submodule sync
-       # Shallow (single-commit) submodule clones: the build never needs
-       # submodule history. --jobs fetches them in parallel.
-       git submodule update --init --recursive --depth 1 --jobs 4
+      run: bash .github/fetch-submodules.sh
 
     # MINGW64 toolchain incl. tar/xz to extract the bindist. path-type: inherit
     # keeps the Windows PATH (incl. the cabal installed below) visible.
@@ -564,11 +549,7 @@ jobs:
 
     # The static plugin baked into uplc-ghc is built from the plutus submodule.
     - name: Init and update submodules
-      run: |
-        git submodule sync
-        # Shallow (single-commit) submodule clones: the build never needs
-        # submodule history. --jobs fetches them in parallel.
-        git submodule update --init --recursive --depth 1 --jobs 4
+      run: bash .github/fetch-submodules.sh
 
     # The GHC source build's boot step runs autoreconf, which needs
     # autoconf/automake; they are not in the macOS runner image. The lean
@@ -621,9 +602,7 @@ jobs:
     # plinth/test/cabal.project pulls plutus-tx/plutus-core/plutus-ledger-api
     # from the plutus submodule.
     - name: Init and update submodules
-      run: |
-        git submodule sync
-        git submodule update --init --recursive --depth 1 --jobs 4
+      run: bash .github/fetch-submodules.sh
 
     # plinth-test.sh invokes cabal, so cabal must be on PATH. (The boot GHC this
     # also installs is unused by the test.)
