@@ -9,7 +9,6 @@ type family F a
 
 identity :: F Integer -> F Integer
 identity x = x
-{-# INLINABLE identity #-}
 
 code :: CompiledCode (F Integer -> F Integer)
 code = $$(PlutusTx.compile [|| identity ||])

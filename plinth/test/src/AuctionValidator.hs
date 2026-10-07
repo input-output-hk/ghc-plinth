@@ -52,7 +52,6 @@ PlutusTx.deriveShow ''Bid
 PlutusTx.makeIsDataSchemaIndexed ''Bid [('Bid, 0)]
 
 instance PlutusTx.Eq Bid where
-  {-# INLINEABLE (==) #-}
   bid == bid' =
     bPkh bid
       PlutusTx.== bPkh bid'
@@ -80,8 +79,6 @@ data AuctionRedeemer = NewBid Bid | Payout
   deriving anyclass (HasBlueprintDefinition)
 
 PlutusTx.makeIsDataSchemaIndexed ''AuctionRedeemer [('NewBid, 0), ('Payout, 1)]
-
-{-# INLINEABLE auctionTypedValidator #-}
 
 {- | Given the auction parameters, determines whether the transaction is allowed to
 spend the UTXO. V3 validator extracts datum and redeemer from ScriptContext.
@@ -213,7 +210,6 @@ auctionTypedValidator params ctx@(ScriptContext txInfo scriptRedeemer scriptInfo
             Just _  -> True
             Nothing -> PlutusTx.traceError "Not found: Output paid to highest bidder"
 
-{-# INLINEABLE auctionUntypedValidator #-}
 auctionUntypedValidator ::
   AuctionParams ->
   BuiltinData ->

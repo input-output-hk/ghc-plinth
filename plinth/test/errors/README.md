@@ -42,7 +42,7 @@ the splice before the plugin ran.
 
 | Case                | Construct                          | Location    |
 |---------------------|------------------------------------|-------------|
-| DeepChain           | error inside nested INLINABLE fns  | expression  |
+| DeepChain           | error inside nested functions      | expression  |
 | EnumMethod          | Prelude Enum method                | splice      |
 | EnumRange           | range syntax / enumFromTo          | splice      |
 | Existential         | existential data type              | definition  |
@@ -59,7 +59,7 @@ the splice before the plugin ran.
 | MachineInt          | Int                                | splice      |
 | MachineWord         | Word64                             | splice      |
 | MutualData          | mutually recursive data types      | definition  |
-| NoUnfolding         | imported function w/o INLINABLE    | splice      |
+| NoUnfolding         | imported NOINLINE function         | splice      |
 | PolyKindsExtension  | PolyKinds extension                | definition  |
 | PreludeError        | Prelude.error                      | splice      |
 | PreludeUndefined    | Prelude.undefined                  | splice      |

@@ -8,7 +8,6 @@ newtype Stream = Stream (Integer, Stream)
 
 hd :: Stream -> Integer
 hd (Stream (x, _)) = x
-{-# INLINABLE hd #-}
 
 code :: CompiledCode (Stream -> Integer)
 code = $$(PlutusTx.compile [|| hd ||])

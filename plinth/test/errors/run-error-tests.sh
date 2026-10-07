@@ -66,9 +66,8 @@ GHC_ARGS=(
   -package bytestring
   -fplugin-opt "Plinth.Plugin:target-version=1.1.0"
   -fplugin-opt "Plinth.Plugin:preserve-source-locations"
-  -fno-full-laziness -fno-ignore-interface-pragmas
-  -fno-omit-interface-pragmas -fno-spec-constr -fno-specialise
-  -fno-strictness -fno-unbox-small-strict-fields
+  -fno-full-laziness -fno-spec-constr
+  -fno-specialise -fno-strictness -fno-unbox-small-strict-fields
   -fno-unbox-strict-fields
   -fforce-recomp
   -fhide-source-paths
