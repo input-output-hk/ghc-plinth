@@ -32,12 +32,10 @@ import PlutusTx
 import PlutusTx.Prelude qualified as PlutusTx
 
 -- on-chain rule: ordinary Haskell, in the Plinth subset
-{-# INLINEABLE mustEqual #-}
 mustEqual :: Integer -> Bool
 mustEqual redeemer = redeemer PlutusTx.== 42
 
 -- the untyped wrapper the ledger actually runs
-{-# INLINEABLE untypedValidator #-}
 untypedValidator :: BuiltinData -> PlutusTx.BuiltinUnit
 untypedValidator arg =
   PlutusTx.check (mustEqual (PlutusTx.unsafeFromBuiltinData arg))
