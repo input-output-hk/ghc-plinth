@@ -81,9 +81,6 @@ auctionTypedValidator params ctx = ...
 auctionUntypedValidator :: AuctionParams -> BuiltinData -> BuiltinUnit
 auctionUntypedValidator params ctx =
   PlutusTx.check (auctionTypedValidator params (PlutusTx.unsafeFromBuiltinData ctx))
-
-{-# INLINEABLE auctionTypedValidator #-}
-{-# INLINEABLE auctionUntypedValidator #-}
 ```
 
 Reading the wrapper: `unsafeFromBuiltinData` decodes the `Data` into your typed
@@ -98,14 +95,28 @@ simply receives no datum.
 pass the datum, redeemer, and context as *separate* `BuiltinData` arguments,
 whereas PlutusV3 passes a single context argument.)
 
-## `INLINEABLE` and the plugin
+## Unfoldings and `INLINEABLE`
 
 The plugin compiles the one function named in the `compile` quote, following
 every definition it references. For a referenced definition in another module to
-be available, GHC must have kept its **unfolding** in the interface file &mdash;
-which is why on-chain functions are marked `{-# INLINEABLE #-}`. Omitting it on a
-function used on-chain is a common cause of compile-time errors complaining that
-the plugin cannot find a definition's unfolding.
+be available, GHC must keep its **unfolding** (its GHC Core definition) in the
+interface file.
+
+You do not need `{-# INLINEABLE #-}` pragmas for this:
+
+- uplc-ghc marks each definition that has no inline pragma of its own as
+  `INLINEABLE`, so GHC keeps its unfolding.
+- The `base`, `ghc-prim` and `ghc-bignum` libraries that come with uplc-ghc
+  have the unfoldings of all their definitions.
+- In uplc-ghc, `-O0` does not set `-fomit-interface-pragmas` and
+  `-fignore-interface-pragmas`, which remove unfoldings. Thus you can build
+  Plinth code with `-O0`.
+
+Only a `{-# NOINLINE #-}` or `{-# OPAQUE #-}` pragma hides a definition of your
+code from the plugin.
+
+Code from the Plinth template and from the Plutus libraries still has
+`INLINEABLE` pragmas. They are not necessary, but they do no harm.
 
 ## Sharing with off-chain code
 

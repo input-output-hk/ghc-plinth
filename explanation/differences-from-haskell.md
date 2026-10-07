@@ -130,10 +130,8 @@ Error: Unsupported feature: GHC.Show.Show.show, use PlutusTx.Show.Show
 ```
 
 The `base` instances of these classes are compiled for the GHC runtime: they
-work on machine integers, produce `String` values, and usually ship without
-the unfoldings the Plinth compiler needs (see
-[below](#functions-without-unfoldings)). `PlutusTx.Prelude` provides on-chain
-versions &mdash; `PlutusTx.Eq`, `PlutusTx.Ord`, `PlutusTx.Show`,
+work on machine integers and produce `String` values. `PlutusTx.Prelude`
+provides on-chain versions &mdash; `PlutusTx.Eq`, `PlutusTx.Ord`, `PlutusTx.Show`,
 `PlutusTx.Enum` &mdash; whose methods compile to UPLC builtins. Import it and
 you keep writing `==` and `compare`; they simply resolve to the on-chain
 classes.
@@ -252,18 +250,16 @@ On-chain kinds are `*` and arrow kinds only; there are no kind variables.
 ### Functions without unfoldings
 
 ```
-Error: Reference to a name which is not a local, a builtin, or an external INLINABLE function: Variable Auction.opaque
+Error: Reference to a name which is not a local, a builtin, or an external function with an available definition: Variable Auction.opaque
        No unfolding
+       The definition of ‘Auction.opaque’ is not available. Remove its NOINLINE or OPAQUE pragma.
 ```
 
 The compiler translates the GHC Core definition (the "unfolding") of every
-function the compiled code references, and GHC only stores unfoldings in
-interface files under certain conditions. Mark on-chain functions
-`{-# INLINEABLE #-}` and build with the standard Plinth flags &mdash; see
-[`INLINEABLE` and the plugin]({% link explanation/plinth-language.md %}) and
-[Use uplc-ghc in a project]({% link how-to/use.md %}). This is also the error
-you get when calling a `base` or third-party function that was never meant to
-go on-chain: prefer the `PlutusTx.Prelude` counterpart.
+function the compiled code references. uplc-ghc keeps the unfoldings of all
+definitions without `INLINEABLE` pragmas, except when a `NOINLINE` or `OPAQUE`
+pragma hides the definition &mdash; see
+[Unfoldings and `INLINEABLE`]({% link explanation/plinth-language.md %}#unfoldings-and-inlineable).
 
 ## Further reading
 
