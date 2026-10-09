@@ -79,6 +79,34 @@ jobs:
         fi
         echo "releasing $VERSION from $GITHUB_REF_NAME ($GITHUB_SHA)"
 
+    # uplc-ghc only works with the ghc-plinth-plutus commit it is built from
+    # (the plutus submodule). The examples and the tutorials on gh-pages tell
+    # users which commit to use, so they must pin that commit before release.
+    - name: Check the plutus pins of the examples and the docs
+      run: |
+        set -eu
+        PLUTUS=$(git ls-tree HEAD plutus | awk '{print $3}')
+        git fetch -q --depth 1 origin gh-pages
+        # Print "file tag" for each ghc-plinth-plutus source-repository-package.
+        list_pins() {
+          awk '/location: .*ghc-plinth-plutus/ { want = 1; next }
+               want && /tag:/ { print FILENAME, $2; want = 0 }' "$@"
+        }
+        mkdir -p .gh-pages
+        git archive origin/gh-pages | tar -x -C .gh-pages
+        PINS=$(list_pins examples/*/cabal.project $(grep -rl ghc-plinth-plutus .gh-pages --include='*.md'))
+        if [ -z "$PINS" ]; then
+          echo "error: found no ghc-plinth-plutus pin"
+          exit 1
+        fi
+        echo "$PINS"
+        BAD=$(echo "$PINS" | awk -v want="$PLUTUS" '$2 != want')
+        if [ -n "$BAD" ]; then
+          echo "error: these pins are not the plutus submodule commit ($PLUTUS):"
+          echo "$BAD"
+          exit 1
+        fi
+
   plinth-build-linux:
     name: plinth-build / ${{ matrix.os }} / ghc ${{ matrix.ghc }}
     runs-on: ${{ matrix.os }}
